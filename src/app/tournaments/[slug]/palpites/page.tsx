@@ -41,12 +41,15 @@ type GroupsState = Partial<Record<GroupLetter, GroupPredictions>>;
 
 function generateMatchesForGroup(group: WorldCupGroup): GroupMatch[] {
   const matches: GroupMatch[] = [];
-  const teams = group.teams;
+  const teams = group.teams ?? [];
 
   for (let i = 0; i < teams.length; i++) {
     for (let j = i + 1; j < teams.length; j++) {
       const home = teams[i];
       const away = teams[j];
+
+      // Garantia pro TypeScript: se algum vier undefined, pula
+      if (!home || !away) continue;
 
       matches.push({
         id: `${group.letter}-${home.id}-${away.id}`,
@@ -61,6 +64,7 @@ function generateMatchesForGroup(group: WorldCupGroup): GroupMatch[] {
 
   return matches;
 }
+
 
 function countFilledMatches(groupMatches: GroupMatch[], gp?: GroupPredictions) {
   if (!gp) return 0;
