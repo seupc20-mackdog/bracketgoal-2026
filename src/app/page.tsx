@@ -1,32 +1,32 @@
-// src/app/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { copa2026 } from "@/data/tournaments";
 
-export default function HomePage() {
+export default function Home() {
   const router = useRouter();
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const getSession = async () => {
+    async function loadUser() {
       const { data } = await supabaseClient.auth.getUser();
-      if (data.user) {
-        setUserEmail(data.user.email ?? null);
+      if (data.user?.email) {
+        setUserEmail(data.user.email);
       }
       setLoadingAuth(false);
-    };
-    getSession();
+    }
+    loadUser();
   }, []);
 
-  const handleLoginGoogle = async () => {
+  const isLogged = !!userEmail;
+
+  const handleLoginWithGoogle = async () => {
     setLoadingAuth(true);
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -44,8 +44,8 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] relative text-slate-50">
-      {/* Fundo estilo estádio + overlay */}
+    <div className="relative min-h-[calc(100vh-3.5rem)] text-slate-50">
+      {/* Fundo estilo estádio */}
       <div className="absolute inset-0 -z-10">
         <Image
           src="/bg/stadium-2026.jpg"
@@ -54,17 +54,16 @@ export default function HomePage() {
           priority
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-slate-950/92 to-black/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-slate-950/90 to-black/95" />
       </div>
 
-      <div className="relative max-w-6xl mx-auto px-4 py-10 md:py-12">
-        {/* HERO: logo + texto + CTA */}
-        <section className="grid gap-8 md:grid-cols-[1.6fr,1.2fr] items-center">
-          {/* Lado esquerdo */}
+      <div className="relative mx-auto max-w-6xl px-4 py-10 md:py-12">
+        {/* HERO */}
+        <section className="grid items-center gap-10 md:grid-cols-[1.6fr,1.2fr]">
           <div className="space-y-6">
-            {/* Logo grande */}
+            {/* Marca */}
             <div className="flex items-center gap-3">
-              <div className="relative w-11 h-11 rounded-2xl overflow-hidden border border-emerald-900 bg-slate-950">
+              <div className="relative h-11 w-11 overflow-hidden rounded-2xl border border-emerald-900 bg-slate-950">
                 <Image
                   src="/brand/bracketgoal-icon-512.png"
                   alt="BracketGoal"
@@ -75,74 +74,47 @@ export default function HomePage() {
               </div>
               <div className="flex flex-col leading-tight">
                 <span className="text-xl font-semibold tracking-tight">
-                  Bracket<span className="text-amber-300">Goal</span>
+                  Bracket<span className="text-amber-300">Goal</span> 2026
                 </span>
                 <span className="text-[11px] text-slate-300">
-                  Plataforma de bolões recreativos · World Cup 2026
+                  Bolões recreativos para empresas, streamers e grupos de amigos.
                 </span>
               </div>
             </div>
 
             <div>
-              <h1 className="mt-3 text-3xl md:text-4xl font-bold tracking-tight drop-shadow-[0_0_18px_rgba(0,0,0,0.6)]">
-                Bolões de campeonato em nível profissional,
-                <br className="hidden sm:block" /> começando pela{" "}
+              <h1 className="mt-3 text-balance text-3xl font-bold tracking-tight md:text-4xl">
+                Crie bolões da Copa para{" "}
                 <span className="bg-gradient-to-tr from-amber-300 via-emerald-300 to-emerald-500 bg-clip-text text-transparent">
-                  Copa do Mundo 2026
-                </span>
-                .
-              </h1>
-              <p className="mt-3 text-sm md:text-base text-slate-200/90 leading-relaxed max-w-xl">
-                O BracketGoal permite que{" "}
-                <span className="font-semibold">
-                  empresas, influenciadores e grupos de amigos
+                  equipes, audiência e amigos
                 </span>{" "}
-                rodem bolões totalmente recreativos, com ranking, regras
-                próprias e uma experiência visual digna de transmissão oficial.
+                em poucos cliques.
+              </h1>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-200/90 md:text-base">
+                O BracketGoal 2026 é a plataforma para{" "}
+                <span className="font-semibold">
+                  empresas, criadores de conteúdo e grupos de amigos
+                </span>{" "}
+                rodarem bolões totalmente recreativos, com{" "}
+                <span className="font-semibold text-emerald-200">
+                  ranking automático, regras personalizáveis
+                </span>{" "}
+                e visual estilo transmissão oficial.
               </p>
             </div>
 
-            {/* Bullets de valor */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-200/90">
-              <div className="space-y-1.5">
-                <p className="flex items-center gap-2">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[10px] font-bold">
-                    1
-                  </span>
-                  <span className="font-semibold">
-                    Torneio base da Copa 2026
-                  </span>
-                </p>
-                <p className="text-slate-300">
-                  Fase de grupos, mata-mata e chaveamento automáticos a partir
-                  dos seus palpites.
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <p className="flex items-center gap-2">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[10px] font-bold">
-                    2
-                  </span>
-                  <span className="font-semibold">
-                    Múltiplos bolões no mesmo motor
-                  </span>
-                </p>
-                <p className="text-slate-300">
-                  Um único torneio alimenta bolões corporativos, de streamers
-                  e grupos privados.
-                </p>
-              </div>
-            </div>
-
-            {/* CTA: login / dashboard */}
-            <div className="mt-4 flex flex-col gap-3 items-start">
-              {userEmail ? (
+            {/* CTA principal */}
+            <div
+              id="cta"
+              className="mt-4 flex flex-col items-stretch gap-3 sm:items-start"
+            >
+              {isLogged ? (
                 <>
                   <button
                     onClick={handleGoToDashboard}
-                    className="px-5 py-2.5 rounded-xl bg-amber-400 text-slate-950 text-sm font-semibold shadow-lg shadow-amber-400/30 hover:bg-amber-300 transition-colors"
+                    className="w-full rounded-2xl bg-amber-400 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-amber-400/30 transition-colors hover:bg-amber-300 sm:w-auto"
                   >
-                    Ir para meu painel
+                    Acessar meus bolões da Copa
                   </button>
                   <span className="text-xs text-emerald-100/90">
                     Logado como{" "}
@@ -152,138 +124,203 @@ export default function HomePage() {
               ) : (
                 <>
                   <button
-                    onClick={handleLoginGoogle}
+                    onClick={handleLoginWithGoogle}
                     disabled={loadingAuth}
-                    className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full rounded-2xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                   >
                     {loadingAuth
                       ? "Verificando sessão..."
-                      : "Entrar com Google"}
+                      : "Criar meu bolão grátis com Google"}
                   </button>
 
                   <button
                     onClick={handleGoToEmailAuth}
                     className="text-xs text-slate-100 underline underline-offset-4 hover:text-emerald-200"
                   >
-                    Ou entrar com e-mail e senha
+                    Prefiro entrar com e-mail e senha
                   </button>
                 </>
               )}
             </div>
 
-            <p className="text-[11px] text-slate-400 max-w-md mt-3">
+            {/* Aviso legal */}
+            <p className="mt-3 max-w-md text-[11px] text-slate-400">
               BracketGoal é uma plataforma de bolões{" "}
               <span className="font-semibold">estritamente recreativos</span>.
-              Não vende bilhetes diretamente ao público e não opera como casa
-              de apostas ou cassino. Cada organizador define suas próprias
-              regras e premiações em conformidade com a legislação local.
+              Não opera como casa de apostas ou cassino. Cada organizador define
+              regras e premiações do seu próprio bolão.
             </p>
           </div>
 
-          {/* Lado direito: card do torneio base + “para quem é” */}
+          {/* Card torneio base à direita */}
           <div className="space-y-4">
-            {/* Card do torneio base */}
             <div className="rounded-2xl border border-emerald-700/80 bg-gradient-to-br from-emerald-900/90 via-emerald-950 to-slate-950 p-4 shadow-xl shadow-emerald-900/40">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold">
-                  Torneio base: {copa2026.name}
-                </h2>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-black/25 border border-amber-300/50 text-amber-200">
-                  {copa2026.year}
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-200">
+                    Torneio base
+                  </p>
+                  <h2 className="text-sm font-semibold">
+                    {copa2026.name} · {copa2026.year}
+                  </h2>
+                </div>
+                <span className="rounded-full border border-amber-300/60 bg-black/25 px-2 py-0.5 text-[11px] text-amber-200">
+                  Fase de grupos + mata-mata
                 </span>
               </div>
-              <p className="text-xs text-emerald-50/90 leading-relaxed mb-3">
+              <p className="mb-3 text-xs leading-relaxed text-emerald-50/90">
                 {copa2026.description}
               </p>
-              <ul className="text-[11px] text-emerald-50/90 list-disc list-inside space-y-1">
-                <li>Fase de grupos completa com todos os confrontos.</li>
-                <li>Chaveamento de mata-mata gerado a partir dos seus palpites.</li>
-                <li>Pontuação configurável para diferentes tipos de bolão.</li>
+              <ul className="list-inside list-disc space-y-1 text-[11px] text-emerald-50/90">
+                <li>Calendário completo da Copa já configurado.</li>
+                <li>Chaveamento gerado a partir dos palpites.</li>
+                <li>Pontuação ajustável por tipo de bolão.</li>
                 <li>Ranking em tempo real por organizador.</li>
               </ul>
             </div>
 
-            {/* Mini cards: para quem é o BracketGoal */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="grid gap-3 text-xs sm:grid-cols-2">
               <div className="rounded-xl border border-slate-800 bg-slate-950/85 p-3">
-                <p className="text-[11px] font-semibold text-emerald-300 mb-1 flex items-center gap-2">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[10px]">
+                <p className="mb-1 flex items-center gap-2 text-[11px] font-semibold text-emerald-300">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] text-slate-950">
                     👔
                   </span>
                   Para empresas
                 </p>
                 <p className="text-slate-200/90">
-                  Engaje colaboradores com um bolão interno, logotipo da
-                  empresa, ranking só da equipe e regras próprias de premiação.
+                  Engaje colaboradores com um bolão interno e ranking por área
+                  ou filial.
                 </p>
               </div>
-
               <div className="rounded-xl border border-slate-800 bg-slate-950/85 p-3">
-                <p className="text-[11px] font-semibold text-emerald-300 mb-1 flex items-center gap-2">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[10px]">
+                <p className="mb-1 flex items-center gap-2 text-[11px] font-semibold text-emerald-300">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] text-slate-950">
                     📺
                   </span>
-                  Para influenciadores
+                  Para streamers
                 </p>
                 <p className="text-slate-200/90">
-                  Crie um bolão exclusivo para inscritos, com URL
-                  personalizada, campanhas promocionais e ranking da comunidade.
+                  Crie um bolão para inscritos e apoiadores, com URL própria e
+                  ranking da comunidade.
                 </p>
               </div>
-
-              <div className="rounded-xl border border-slate-800 bg-slate-950/85 p-3 sm:col-span-2">
-                <p className="text-[11px] font-semibold text-emerald-300 mb-1 flex items-center gap-2">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[10px]">
+              <div className="sm:col-span-2 rounded-xl border border-slate-800 bg-slate-950/85 p-3">
+                <p className="mb-1 flex items-center gap-2 text-[11px] font-semibold text-emerald-300">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] text-slate-950">
                     🎉
                   </span>
-                  Entre amigos e ligas recreativas
+                  Entre amigos
                 </p>
                 <p className="text-slate-200/90">
-                  Organize aquele bolão clássico com amigos, família ou grupo
-                  de futebol, com uma interface moderna e tudo centralizado em
-                  um só lugar.
+                  Organize o clássico bolão com família e amigos, sem planilhas
+                  e sem perder nenhum palpite.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Seção extra curta (credibilidade / compliance) */}
-        <section className="mt-10 border-t border-slate-800/80 pt-5">
-          <div className="grid gap-4 md:grid-cols-3 text-[11px] text-slate-300">
-            <div>
-              <h3 className="text-xs font-semibold mb-1 text-slate-100">
-                Plataforma recreativa
-              </h3>
-              <p>
-                O foco do BracketGoal é diversão, engajamento e experiência de
-                torneio. Não há cassino, roleta, slot ou mercados de odds em
-                tempo real.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold mb-1 text-slate-100">
-                Cada organizador, um bolão
-              </h3>
-              <p>
-                Empresas, influencers ou amigos definem regras e prêmios do
-                próprio bolão, sempre em caráter recreativo, sem promessa de
-                lucro financeiro garantido.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold mb-1 text-slate-100">
-                Tecnologia moderna
-              </h3>
-              <p>
-                Construído em Next.js com Supabase, preparado para escalar com
-                segurança, autenticação moderna e expansão para outros
-                campeonatos além da Copa 2026.
-              </p>
-            </div>
+        {/* COMO FUNCIONA (resumido) */}
+        <section className="mt-12 space-y-5">
+          <div>
+            <h2 className="text-lg font-semibold sm:text-xl">
+              Como funciona o{" "}
+              <span className="text-emerald-300">BracketGoal</span>
+            </h2>
+            <p className="max-w-2xl text-sm text-slate-300">
+              Três passos simples para o seu bolão da Copa 2026 sair do papel.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <FeatureCard
+              step="1"
+              title="Crie seu bolão"
+              description="Defina nome, público (empresa, audiência ou amigos) e regras básicas de pontuação."
+            />
+            <FeatureCard
+              step="2"
+              title="Convide a galera"
+              description="Compartilhe o link do bolão por e-mail, WhatsApp, live ou canal privado."
+            />
+            <FeatureCard
+              step="3"
+              title="Acompanhe o ranking"
+              description="Veja quem está mandando melhor nos palpites, grupo a grupo, até a final."
+            />
+          </div>
+        </section>
+
+        {/* FAQ rápido */}
+        <section className="mt-12 space-y-5">
+          <div>
+            <h2 className="text-lg font-semibold sm:text-xl">
+              Perguntas rápidas
+            </h2>
+            <p className="text-sm text-slate-300">
+              Alguns pontos importantes antes de você criar seu primeiro bolão.
+            </p>
+          </div>
+
+          <div className="space-y-3 text-sm">
+            <FaqItem question="O BracketGoal 2026 é gratuito?">
+              Estamos em fase de MVP. O uso é gratuito para criar e testar
+              bolões recreativos da Copa 2026. No futuro, podemos adicionar
+              planos específicos para empresas e criadores.
+            </FaqItem>
+            <FaqItem question="Preciso instalar algum aplicativo?">
+              Não. O BracketGoal roda direto no navegador (desktop e mobile).
+              Basta acessar o site, entrar com sua conta e criar seu bolão.
+            </FaqItem>
+            <FaqItem question="Posso personalizar as regras do meu bolão?">
+              O MVP já nasce preparado para diferentes lógicas de pontuação. A
+              ideia é evoluir para permitir configurações mais avançadas por
+              organizador.
+            </FaqItem>
           </div>
         </section>
       </div>
     </div>
+  );
+}
+
+type FeatureCardProps = {
+  step: string;
+  title: string;
+  description: string;
+};
+
+function FeatureCard({ step, title, description }: FeatureCardProps) {
+  return (
+    <article className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4">
+      <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-slate-900/90 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-slate-300">
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-slate-950">
+          {step}
+        </span>
+        Passo {step}
+      </div>
+      <h3 className="text-sm font-semibold text-slate-50">{title}</h3>
+      <p className="mt-1 text-[12px] leading-relaxed text-slate-300">
+        {description}
+      </p>
+    </article>
+  );
+}
+
+type FaqItemProps = {
+  question: string;
+  children: ReactNode;
+};
+
+function FaqItem({ question, children }: FaqItemProps) {
+  return (
+    <details className="group rounded-xl border border-slate-800 bg-slate-950/80 p-3">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-slate-100">
+        <span>{question}</span>
+        <span className="text-xs text-slate-400 group-open:hidden">+</span>
+        <span className="hidden text-xs text-slate-400 group-open:inline">–</span>
+      </summary>
+      <p className="mt-2 text-[13px] text-slate-300">{children}</p>
+    </details>
   );
 }
