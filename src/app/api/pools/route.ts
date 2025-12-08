@@ -140,11 +140,13 @@ export async function POST(req: Request) {
 
     let organizerId: string;
 
-    const firstOrganizer = existingOrganizers?.[0];
+    const firstOrganizer = (existingOrganizers?.[0] ??
+      null) as { id?: string } | null;
 
-    if (firstOrganizer && firstOrganizer.id) {
-      organizerId = firstOrganizer.id as string;
+    if (firstOrganizer?.id) {
+      organizerId = firstOrganizer.id;
     } else {
+      // 2) Cria organizer "amigos"/"empresa"/"influencer" para o usuário
       const baseName =
         organizerType === "amigos"
           ? ownerEmail
