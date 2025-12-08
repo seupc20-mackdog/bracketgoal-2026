@@ -13,7 +13,11 @@ const supabase =
 type Mode = "friends" | "company" | "creator";
 
 interface FriendConfigPayload {
-  tournamentType: "worldcup_2026" | "brasileirao_2026" | "champions_league" | "custom";
+  tournamentType:
+    | "worldcup_2026"
+    | "brasileirao_2026"
+    | "champions_league"
+    | "custom";
   poolName: string;
   numMatches: number;
   filterHours: number;
@@ -36,7 +40,9 @@ function mapModeToOrganizerType(mode: Mode): "amigos" | "empresa" | "influencer"
 }
 
 // converte wizard -> id da tabela tournaments
-function mapTournamentId(tournamentType: FriendConfigPayload["tournamentType"]): string | null {
+function mapTournamentId(
+  tournamentType: FriendConfigPayload["tournamentType"]
+): string | null {
   switch (tournamentType) {
     case "worldcup_2026":
       return "world-cup-2026";
@@ -117,8 +123,11 @@ export async function POST(req: Request) {
 
     let organizerId: string;
 
-    if (existingOrganizers && existingOrganizers.length > 0) {
-      organizerId = existingOrganizers[0].id;
+    // ==== TRECHO AJUSTADO AQUI ====
+    const firstOrganizer = existingOrganizers?.[0];
+
+    if (firstOrganizer && firstOrganizer.id) {
+      organizerId = firstOrganizer.id as string;
     } else {
       // 2) Cria organizer "amigos" para o usuário
       const baseName =
@@ -147,7 +156,7 @@ export async function POST(req: Request) {
         .select("id")
         .single();
 
-      if (orgInsertError || !newOrganizer) {
+      if (orgInsertError || !newOrganizer || !newOrganizer.id) {
         console.error("Erro ao criar organizer:", orgInsertError);
         return NextResponse.json(
           { error: "Erro ao criar organizador no banco de dados." },
@@ -155,8 +164,9 @@ export async function POST(req: Request) {
         );
       }
 
-      organizerId = newOrganizer.id;
+      organizerId = newOrganizer.id as string;
     }
+    // ==== FIM DO AJUSTE ====
 
     // 3) Cria pool (bolão) ligada ao organizer
     const poolSlug =
@@ -192,7 +202,7 @@ export async function POST(req: Request) {
       .select("id")
       .single();
 
-    if (poolInsertError || !newPool) {
+    if (poolInsertError || !newPool || !newPool.id) {
       console.error("Erro ao criar pool:", poolInsertError);
       return NextResponse.json(
         { error: "Erro ao criar bolão no banco de dados." },
