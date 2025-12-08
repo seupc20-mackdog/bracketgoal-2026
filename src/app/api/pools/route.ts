@@ -33,7 +33,9 @@ interface CreatePoolBody {
 }
 
 // regra simples para definir tipo de organizador
-function mapModeToOrganizerType(mode: Mode): "amigos" | "empresa" | "influencer" {
+function mapModeToOrganizerType(
+  mode: Mode
+): "amigos" | "empresa" | "influencer" {
   if (mode === "company") return "empresa";
   if (mode === "creator") return "influencer";
   return "amigos";
@@ -140,11 +142,11 @@ export async function POST(req: Request) {
 
     let organizerId: string;
 
-    const firstOrganizer = (existingOrganizers?.[0] ??
+    const organizerRow = (existingOrganizers?.[0] ??
       null) as { id?: string } | null;
 
-    if (firstOrganizer?.id) {
-      organizerId = firstOrganizer.id;
+    if (organizerRow?.id) {
+      organizerId = organizerRow.id;
     } else {
       // 2) Cria organizer "amigos"/"empresa"/"influencer" para o usuário
       const baseName =
