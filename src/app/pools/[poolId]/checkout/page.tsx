@@ -27,8 +27,10 @@ interface PoolWithOrganizer {
 function prettyTournament(id: string | null): string {
   if (!id) return "Custom / misto";
   if (id === "world-cup-2026") return "Copa do Mundo 2026";
-  if (id === "brasileirao-serie-a-2026") return "Campeonato Brasileiro Série A 2026";
-  if (id === "champions-league-2025-2026") return "Champions League 2025-2026";
+  if (id === "brasileirao-serie-a-2026")
+    return "Campeonato Brasileiro Série A 2026";
+  if (id === "champions-league-2025-2026")
+    return "Champions League 2025-2026";
   return id;
 }
 
@@ -40,7 +42,7 @@ export default function PoolCheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [pool, setPool] = useState<PoolWithOrganizer | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activating, setActivating] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     async function loadPool() {
@@ -118,37 +120,44 @@ export default function PoolCheckoutPage() {
     loadPool();
   }, [poolId]);
 
-  const handleSimulatePayment = async () => {
+  const handlePayService = async () => {
     if (!poolId || !pool) return;
 
     try {
-      setActivating(true);
+      setPaying(true);
 
-      const response = await fetch(`/api/pools/${poolId}/activate`, {
+      const response = await fetch(`/api/pools/${poolId}/pay-service`, {
         method: "POST",
       });
 
+      const data = await response.json().catch(() => null);
+
       if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        console.error("Erro ao ativar bolão:", data);
+        console.error("Erro ao iniciar pagamento do serviço:", data);
         alert(
           data?.error ??
-            "Não foi possível ativar o bolão. Tente novamente em alguns instantes."
+            "Não foi possível iniciar o pagamento do serviço. Tente novamente."
         );
-        setActivating(false);
+        setPaying(false);
         return;
       }
 
-      // Em produção, aqui entraria o fluxo real de pagamento
-      alert(
-        "Simulação de pagamento concluída e bolão ativado. Agora vamos para a tela de convites."
-      );
-      router.push(`/pools/${poolId}/invites`);
+      const redirectUrl = data.initPoint ?? data.sandboxInitPoint;
+
+      if (!redirectUrl) {
+        alert(
+          "Pagamento criado, mas não recebemos a URL de checkout do Mercado Pago."
+        );
+        setPaying(false);
+        return;
+      }
+
+      // Redireciona para o checkout do Mercado Pago
+      window.location.href = redirectUrl;
     } catch (error) {
-      console.error("Erro inesperado ao ativar bolão:", error);
-      alert("Erro inesperado ao ativar o bolão. Verifique os logs.");
-    } finally {
-      setActivating(false);
+      console.error("Erro inesperado ao iniciar pagamento:", error);
+      alert("Erro inesperado ao iniciar o pagamento do serviço.");
+      setPaying(false);
     }
   };
 
@@ -302,9 +311,9 @@ export default function PoolCheckoutPage() {
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] text-emerald-100/80">
-                  O valor está salvo na coluna <code>total_price</code> da tabela{" "}
-                  <code>pools</code>. Você pode ajustar a fórmula de cálculo no
-                  backend conforme sua estratégia comercial.
+                  O valor está salvo na coluna <code>total_price</code> da
+                  tabela <code>pools</code>. Você pode ajustar a fórmula de
+                  cálculo no backend conforme sua estratégia comercial.
                 </p>
               </div>
 
@@ -321,19 +330,19 @@ export default function PoolCheckoutPage() {
 
               <button
                 type="button"
-                onClick={handleSimulatePayment}
+                onClick={handlePayService}
                 className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 transition hover:bg-emerald-400 disabled:opacity-60"
-                disabled={activating}
+                disabled={paying}
               >
-                {activating
-                  ? "Ativando bolão..."
-                  : "Simular pagamento e ativar bolão"}
+                {paying
+                  ? "Redirecionando para pagamento..."
+                  : "Pagar serviço via Mercado Pago"}
               </button>
 
               <p className="text-[11px] text-slate-400">
-                Em produção, este botão deve redirecionar para um gateway de
-                pagamento (Pix, cartão, etc.). Após a confirmação, o bolão será
-                ativado e você será levado à tela de convites.
+                Em produção, este botão redireciona para o checkout do Mercado
+                Pago. Após a confirmação do pagamento, o bolão será ativado e
+                você será levado à tela de convites.
               </p>
             </section>
           </div>

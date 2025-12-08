@@ -1,0 +1,169 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+// Supabase apenas no servidor com service role
+const supabase =
+  supabaseUrl && supabaseServiceRoleKey
+    ? createClient(supabaseUrl, supabaseServiceRoleKey)
+    : null;
+
+export async function POST(
+  _req: Request,
+  { params }: { params: { poolId: string } }
+) {
+  try {
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Supabase não configurado no servidor." },
+        { status: 500 }
+      );
+    }
+
+    if (!mpAccessToken) {
+      return NextResponse.json(
+        { error: "MERCADOPAGO_ACCESS_TOKEN não configurado." },
+        { status: 500 }
+      );
+    }
+
+    const poolId = params.poolId;
+    if (!poolId) {
+      return NextResponse.json(
+        { error: "ID do bolão não informado." },
+        { status: 400 }
+      );
+    }
+
+    // 1) Buscar o bolão para saber valor e nome
+    const { data: pool, error: poolError } = await supabase
+      .from("pools")
+      .select("id, name, total_price, currency, status")
+      .eq("id", poolId)
+      .single();
+
+    if (poolError || !pool) {
+      console.error("Erro ao buscar pool em pay-service:", poolError);
+      return NextResponse.json(
+        { error: "Não foi possível localizar este bolão." },
+        { status: 404 }
+      );
+    }
+
+    const amount = pool.total_price ?? 0;
+    const currency = pool.currency || "BRL";
+
+    if (amount <= 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Valor do serviço inválido. Verifique a coluna total_price na tabela pools.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // 2) Criar registro de pagamento PENDENTE (serviço do bolão)
+    const { data: payment, error: paymentError } = await supabase
+      .from("payments")
+      .insert({
+        pool_id: pool.id,
+        entry_id: null, // pagamento do SERVIÇO, não de participante
+        amount,
+        currency,
+        method: "mercado_pago",
+        status: "pending",
+      })
+      .select("id")
+      .single();
+
+    if (paymentError || !payment) {
+      console.error("Erro ao criar registro de pagamento:", paymentError);
+      return NextResponse.json(
+        {
+          error: "Não foi possível registrar o pagamento do serviço.",
+          details: paymentError?.message ?? paymentError,
+        },
+        { status: 500 }
+      );
+    }
+
+    const internalPaymentId = payment.id as string;
+
+    // 3) Criar preferência no Mercado Pago
+    const preferenceBody = {
+      items: [
+        {
+          title: `Serviço BracketGoal - ${pool.name}`,
+          quantity: 1,
+          currency_id: currency,
+          unit_price: amount,
+        },
+      ],
+      back_urls: {
+        success: `${appUrl}/payments/mercadopago/success?poolId=${pool.id}&paymentId=${internalPaymentId}`,
+        failure: `${appUrl}/payments/mercadopago/failure?poolId=${pool.id}&paymentId=${internalPaymentId}`,
+        pending: `${appUrl}/payments/mercadopago/pending?poolId=${pool.id}&paymentId=${internalPaymentId}`,
+      },
+      auto_return: "approved",
+      external_reference: internalPaymentId,
+    };
+
+    const mpResponse = await fetch(
+      "https://api.mercadopago.com/checkout/preferences",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${mpAccessToken}`,
+        },
+        body: JSON.stringify(preferenceBody),
+      }
+    );
+
+    if (!mpResponse.ok) {
+      const errText = await mpResponse.text();
+      console.error("Erro ao criar preferência no Mercado Pago:", errText);
+
+      return NextResponse.json(
+        {
+          error:
+            "Erro ao criar preferência de pagamento no Mercado Pago (serviço).",
+          details: errText,
+        },
+        { status: 500 }
+      );
+    }
+
+    const prefJson = await mpResponse.json();
+
+    // 4) Atualizar registro de pagamento com referência do PSP (preferência)
+    await supabase
+      .from("payments")
+      .update({ psp_reference: String(prefJson.id) })
+      .eq("id", internalPaymentId);
+
+    // 5) Retornar URL de checkout do Mercado Pago
+    return NextResponse.json(
+      {
+        paymentId: internalPaymentId,
+        initPoint: prefJson.init_point ?? null,
+        sandboxInitPoint: prefJson.sandbox_init_point ?? null,
+      },
+      { status: 200 }
+    );
+  } catch (err: any) {
+    console.error("Erro inesperado em /api/pools/[poolId]/pay-service:", err);
+    return NextResponse.json(
+      {
+        error: "Erro interno ao iniciar pagamento do serviço.",
+        details: err?.message ?? String(err),
+      },
+      { status: 500 }
+    );
+  }
+}
