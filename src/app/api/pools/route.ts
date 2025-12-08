@@ -101,11 +101,25 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!config.maxPlayers || config.maxPlayers <= 0) {
+      return NextResponse.json(
+        { error: "Número de participantes inválido." },
+        { status: 400 }
+      );
+    }
+
+    if (!config.numMatches || config.numMatches <= 0) {
+      return NextResponse.json(
+        { error: "Número de jogos do bolão inválido." },
+        { status: 400 }
+      );
+    }
+
     const organizerType = mapModeToOrganizerType(mode);
-    const tournamentId = mapTournamentId(config.tournamentType);
+    const mappedTournamentId = mapTournamentId(config.tournamentType);
     const totalPrice = calcServicePrice(config.numMatches, config.maxPlayers);
 
-    // 1) Verifica se já existe um organizer para este usuário + tipo
+    // ===== 1) Verifica / cria organizer =====
     const { data: existingOrganizers, error: orgSelectError } = await supabase
       .from("organizers")
       .select("id")
@@ -116,20 +130,21 @@ export async function POST(req: Request) {
     if (orgSelectError) {
       console.error("Erro ao buscar organizer:", orgSelectError);
       return NextResponse.json(
-        { error: "Erro ao buscar organizador no banco de dados." },
+        {
+          error: "Erro ao buscar organizador no banco de dados.",
+          details: orgSelectError.message,
+        },
         { status: 500 }
       );
     }
 
     let organizerId: string;
 
-    // ==== TRECHO AJUSTADO AQUI ====
     const firstOrganizer = existingOrganizers?.[0];
 
     if (firstOrganizer && firstOrganizer.id) {
       organizerId = firstOrganizer.id as string;
     } else {
-      // 2) Cria organizer "amigos" para o usuário
       const baseName =
         organizerType === "amigos"
           ? ownerEmail
@@ -159,26 +174,48 @@ export async function POST(req: Request) {
       if (orgInsertError || !newOrganizer || !newOrganizer.id) {
         console.error("Erro ao criar organizer:", orgInsertError);
         return NextResponse.json(
-          { error: "Erro ao criar organizador no banco de dados." },
+          {
+            error: "Erro ao criar organizador no banco de dados.",
+            details: orgInsertError?.message ?? orgInsertError,
+          },
           { status: 500 }
         );
       }
 
       organizerId = newOrganizer.id as string;
     }
-    // ==== FIM DO AJUSTE ====
 
-    // 3) Cria pool (bolão) ligada ao organizer
+    // ===== 2) Confirmar se o torneio existe (evitar FK 23503) =====
+    let tournamentIdToUse: string | null = null;
+
+    if (mappedTournamentId) {
+      const { data: tournamentRow, error: tErr } = await supabase
+        .from("tournaments")
+        .select("id")
+        .eq("id", mappedTournamentId)
+        .maybeSingle();
+
+      if (tErr) {
+        console.warn("Aviso: erro ao verificar torneio:", tErr);
+        // Se der erro aqui, vamos seguir com tournament_id = null
+        tournamentIdToUse = null;
+      } else if (tournamentRow?.id) {
+        tournamentIdToUse = tournamentRow.id as string;
+      } else {
+        // Não encontrou torneio com esse ID → segue como custom (null)
+        tournamentIdToUse = null;
+      }
+    }
+
+    // ===== 3) Cria pool (bolão) ligada ao organizer =====
     const poolSlug =
-      slugify(config.poolName) +
-      "-" +
-      Date.now().toString(36).slice(-4);
+      slugify(config.poolName) + "-" + Date.now().toString(36).slice(-4);
 
     const { data: newPool, error: poolInsertError } = await supabase
       .from("pools")
       .insert({
         organizer_id: organizerId,
-        tournament_id: tournamentId,
+        tournament_id: tournamentIdToUse, // pode ser null se não achar
         name: config.poolName,
         slug: poolSlug,
         description: null,
@@ -194,7 +231,7 @@ export async function POST(req: Request) {
         starts_at: null,
         ends_at: null,
 
-        // campos que adicionamos via ALTER TABLE
+        // campos extras
         num_matches: config.numMatches,
         filter_hours: config.filterHours,
         access_type: config.accessType,
@@ -205,16 +242,23 @@ export async function POST(req: Request) {
     if (poolInsertError || !newPool || !newPool.id) {
       console.error("Erro ao criar pool:", poolInsertError);
       return NextResponse.json(
-        { error: "Erro ao criar bolão no banco de dados." },
+        {
+          error: "Erro ao criar bolão no banco de dados.",
+          details: poolInsertError?.message ?? poolInsertError,
+          code: (poolInsertError as any)?.code ?? null,
+        },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ poolId: newPool.id }, { status: 201 });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Erro inesperado em /api/pools:", err);
     return NextResponse.json(
-      { error: "Erro interno ao criar bolão." },
+      {
+        error: "Erro interno ao criar bolão.",
+        details: err?.message ?? String(err),
+      },
       { status: 500 }
     );
   }
