@@ -16,3 +16,81 @@ body {
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-700 rounded-full;
 }
+
+/* ==== BRACKETGOAL: BOTÕES PRIMÁRIOS ====
+   Prioridade máxima: contraste + clique em mobile
+================================================ */
+
+.btn-primary {
+  background-color: #0A5C36 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(10, 92, 54, 0.2) !important;
+  border: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background-color: #08452A !important;
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+
+/* Para qualquer coisa que ainda use bg-green-500 do Tailwind
+   (usamos pouco, mas já fica blindado) */
+.bg-green-500 {
+  background-color: #0A5C36 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(10, 92, 54, 0.2) !important;
+  border-radius: 8px !important;
+}
+
+.bg-green-500:hover {
+  background-color: #08452A !important;
+}
+
+/* ==== HERO MOBILE – TIPOGRAFIA E CTA ==== */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 24px !important;
+    line-height: 1.3 !important;
+    margin-bottom: 16px !important;
+  }
+
+  .hero-subtitle {
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 24px !important;
+  }
+
+  .hero-buttons button,
+  .hero-buttons a {
+    display: block !important;
+    width: 90% !important;
+    max-width: 320px !important;
+    height: 48px !important;
+    margin: 0 auto 16px !important;
+    font-size: 16px !important;
+  }
+
+  /* Imagem do estádio / hero visual */
+  img[alt*="Estádio"],
+  .hero-image {
+    max-height: 200px !important;
+    width: auto !important;
+    margin: 32px auto 0 !important;
+    display: block !important;
+  }
+
+  /* Espaçamento geral entre seções */
+  section {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}

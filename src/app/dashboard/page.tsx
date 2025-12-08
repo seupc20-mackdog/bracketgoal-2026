@@ -8,6 +8,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 export default function DashboardPage() {
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export default function DashboardPage() {
         return;
       }
       setUserEmail(data.user?.email ?? null);
+      setUserId(data.user?.id ?? null);
       setLoadingUser(false);
     }
 
@@ -223,121 +225,14 @@ export default function DashboardPage() {
           </aside>
         </section>
 
-        {/* Modos de uso (Empresa / Influencer) */}
-        <section className="mt-8 space-y-4">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
-                Modos de uso do{" "}
-                <span className="text-emerald-300">BracketGoal</span>
-              </h2>
-              <p className="max-w-2xl text-sm text-slate-300">
-                Recursos voltados para empresas, influencers e comunidades
-                estão mapeados para as próximas iterações do produto.
-              </p>
-            </div>
-            <span className="inline-flex w-fit items-center gap-1 rounded-full bg-slate-950/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Roadmap · Pós-MVP
-            </span>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-2">
-            {/* Modo Empresa */}
-            <article className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-950/90 p-5 shadow-lg shadow-slate-950/80 backdrop-blur-sm">
-              <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] text-slate-300 ring-1 ring-slate-700/80">
-                  <span>👔</span>
-                  <span className="uppercase tracking-[0.16em]">
-                    Modo Empresa
-                  </span>
-                </div>
-                <h3 className="text-base font-semibold text-slate-50">
-                  Bolão corporativo para equipes internas
-                </h3>
-                <p className="text-sm text-slate-300">
-                  Crie experiências de engajamento com times, áreas e filiais,
-                  usando o mesmo painel de palpites, mas com{" "}
-                  <span className="font-semibold text-emerald-200">
-                    ranking privado, branding da empresa
-                  </span>{" "}
-                  e regras próprias.
-                </p>
-                <ul className="mt-2 space-y-1.5 text-[11px] text-slate-300">
-                  <li className="flex gap-2">
-                    <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
-                    <span>Convite via e-mail corporativo ou link interno.</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
-                    <span>Ranking por área, diretoria ou geral da empresa.</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
-                    <span>Relatórios para RH e comunicação interna.</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Funcionalidade planejada para versões futuras.</span>
-                <span className="rounded-full bg-slate-900/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-300">
-                  Em breve
-                </span>
-              </div>
-            </article>
-
-            {/* Modo Influencer / Streamer */}
-            <article className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-950/90 p-5 shadow-lg shadow-slate-950/80 backdrop-blur-sm">
-              <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] text-slate-300 ring-1 ring-slate-700/80">
-                  <span>📺</span>
-                  <span className="uppercase tracking-[0.16em]">
-                    Modo Influencer / Streamer
-                  </span>
-                </div>
-                <h3 className="text-base font-semibold text-slate-50">
-                  Bolões para inscritos, membros e comunidade
-                </h3>
-                <p className="text-sm text-slate-300">
-                  Use a Copa como motor de engajamento para o seu canal:
-                  bolões com{" "}
-                  <span className="font-semibold text-emerald-200">
-                    URL própria, identidade visual do criador
-                  </span>{" "}
-                  e ranking apenas da sua audiência.
-                </p>
-                <ul className="mt-2 space-y-1.5 text-[11px] text-slate-300">
-                  <li className="flex gap-2">
-                    <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400" />
-                    <span>Link compartilhável em live, bio, Discord, etc.</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400" />
-                    <span>Ranking só de inscritos, membros ou apoiadores.</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400" />
-                    <span>
-                      Integrações com chat da live e comandos automáticos no
-                      roadmap.
-                    </span>
-                  </li>
-                </ul>
-              </div>
-              <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Integrações com Twitch, YouTube e Discord planejadas.</span>
-                <span className="rounded-full bg-slate-900/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-300">
-                  Em breve
-                </span>
-              </div>
-            </article>
-          </div>
-        </section>
+        {/* Modos de uso (Amigos / Empresa / Influencer) */}
+        <ModesSection ownerEmail={userEmail} ownerUserId={userId} />
       </div>
     </main>
   );
 }
 
-/* === Componentes visuais de apoio (só UI) === */
+/* === Componentes visuais de apoio === */
 
 function DashboardStat({
   label,
@@ -392,5 +287,720 @@ function StatusRow({
         {status}
       </span>
     </li>
+  );
+}
+
+/* === Modos de uso + Wizard Modo Amigos === */
+
+type TournamentType =
+  | "worldcup_2026"
+  | "brasileirao_2026"
+  | "champions_league"
+  | "custom";
+
+type AccessType = "private" | "public";
+
+interface FriendPoolConfig {
+  tournamentType: TournamentType;
+  poolName: string;
+  numMatches: 5 | 6 | 10;
+  filterHours: number;
+  maxPlayers: number;
+  accessType: AccessType;
+  acceptTerms: boolean;
+  acceptRecreationalOnly: boolean;
+}
+
+const initialFriendConfig: FriendPoolConfig = {
+  tournamentType: "worldcup_2026",
+  poolName: "Bolão entre amigos",
+  numMatches: 5,
+  filterHours: 24,
+  maxPlayers: 10,
+  accessType: "private",
+  acceptTerms: false,
+  acceptRecreationalOnly: false,
+};
+
+function ModesSection({
+  ownerEmail,
+  ownerUserId,
+}: {
+  ownerEmail: string | null;
+  ownerUserId: string | null;
+}) {
+  const router = useRouter();
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [step, setStep] = useState(1);
+  const [config, setConfig] = useState<FriendPoolConfig>(initialFriendConfig);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const totalSteps = 4;
+
+  function openWizard() {
+    setConfig(initialFriendConfig);
+    setStep(1);
+    setIsWizardOpen(true);
+  }
+
+  function closeWizard() {
+    if (isSubmitting) return;
+    setIsWizardOpen(false);
+  }
+
+  function nextStep() {
+    if (step < totalSteps) {
+      setStep((prev) => prev + 1);
+    }
+  }
+
+  function prevStep() {
+    if (step > 1) {
+      setStep((prev) => prev - 1);
+    }
+  }
+
+  function setTournamentType(value: TournamentType) {
+    setConfig((prev) => ({ ...prev, tournamentType: value }));
+  }
+
+  function setNumMatches(value: 5 | 6 | 10) {
+    setConfig((prev) => ({ ...prev, numMatches: value }));
+  }
+
+  function setMaxPlayers(value: number) {
+    if (value < 2) value = 2;
+    if (value > 500) value = 500;
+    setConfig((prev) => ({ ...prev, maxPlayers: value }));
+  }
+
+  function setAccessType(value: AccessType) {
+    setConfig((prev) => ({ ...prev, accessType: value }));
+  }
+
+  async function handleConfirm() {
+    if (!ownerUserId || !ownerEmail) {
+      alert("Faça login para criar um bolão.");
+      return;
+    }
+
+    if (!config.acceptTerms || !config.acceptRecreationalOnly) {
+      alert(
+        "Você precisa aceitar os termos e confirmar que o bolão é recreativo."
+      );
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await fetch("/api/pools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "friends",
+          ownerUserId,
+          ownerEmail,
+          config,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        console.error("Erro ao criar bolão:", data);
+        alert(
+          data?.error ??
+            "Não foi possível criar o bolão. Tente novamente em alguns instantes."
+        );
+        return;
+      }
+
+      const json = (await response.json()) as { poolId: string };
+
+      if (!json.poolId) {
+        alert(
+          "Bolão criado, mas não foi possível obter o identificador. Verifique o backend."
+        );
+        return;
+      }
+
+      router.push(`/pools/${json.poolId}/checkout`);
+    } catch (error) {
+      console.error("Erro inesperado ao criar bolão:", error);
+      alert("Erro inesperado ao criar bolão. Verifique os logs.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="mt-8 space-y-4">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
+            Modos de uso do{" "}
+            <span className="text-emerald-300">BracketGoal</span>
+          </h2>
+          <p className="max-w-2xl text-sm text-slate-300">
+            Crie bolões recreativos entre amigos agora e acompanhe o roadmap
+            para versões corporativas e para criadores de conteúdo.
+          </p>
+        </div>
+        <span className="inline-flex w-fit items-center gap-1 rounded-full bg-slate-950/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+          Roadmap · Pós-MVP
+        </span>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-3">
+        {/* Modo Amigos */}
+        <article className="flex flex-col justify-between rounded-2xl border border-emerald-500/70 bg-slate-950/95 p-5 shadow-lg shadow-emerald-900/60 backdrop-blur-sm">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] text-emerald-200 ring-1 ring-emerald-500/60">
+              <span>👥</span>
+              <span className="uppercase tracking-[0.16em]">Modo Amigos</span>
+            </div>
+            <h3 className="text-base font-semibold text-slate-50">
+              Bolões recreativos entre amigos
+            </h3>
+            <p className="text-sm text-slate-200">
+              Crie um bolão rápido para grupos de amigos, família ou colegas.
+              Você paga o serviço, define os jogos e convida quem quiser para
+              participar.
+            </p>
+            <ul className="mt-2 space-y-1.5 text-[11px] text-slate-200">
+              <li className="flex gap-2">
+                <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
+                <span>
+                  Escolha campeonato (ex.: Copa do Mundo 2026, Brasileirão 2026).
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
+                <span>
+                  Selecione 5, 6 ou 10 jogos da próxima rodada com filtro de até
+                  24h.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
+                <span>
+                  Defina limite de jogadores e convide via link, e-mail ou
+                  outros canais.
+                </span>
+              </li>
+            </ul>
+          </div>
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={openWizard}
+              className="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-xs font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 transition hover:bg-emerald-400"
+            >
+              Criar bolão entre amigos
+            </button>
+            <span className="text-[11px] text-slate-400">
+              Fluxo inicial de criação de bolão (MVP).
+            </span>
+          </div>
+        </article>
+
+        {/* Modo Empresa */}
+        <article className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-950/90 p-5 shadow-lg shadow-slate-950/80 backdrop-blur-sm">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] text-slate-300 ring-1 ring-slate-700/80">
+              <span>👔</span>
+              <span className="uppercase tracking-[0.16em]">Modo Empresa</span>
+            </div>
+            <h3 className="text-base font-semibold text-slate-50">
+              Bolão corporativo para equipes internas
+            </h3>
+            <p className="text-sm text-slate-300">
+              Crie experiências de engajamento com times, áreas e filiais,
+              usando o mesmo painel de palpites, mas com{" "}
+              <span className="font-semibold text-emerald-200">
+                ranking privado, branding da empresa
+              </span>{" "}
+              e regras próprias.
+            </p>
+            <ul className="mt-2 space-y-1.5 text-[11px] text-slate-300">
+              <li className="flex gap-2">
+                <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
+                <span>Convite via e-mail corporativo ou link interno.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
+                <span>Ranking por área, diretoria ou geral da empresa.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
+                <span>Relatórios para RH e comunicação interna.</span>
+              </li>
+            </ul>
+          </div>
+          <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Funcionalidade planejada para versões futuras.</span>
+            <button
+              type="button"
+              disabled
+              className="inline-flex cursor-not-allowed items-center justify-center rounded-full border border-dashed border-slate-600 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400"
+            >
+              Em breve
+            </button>
+          </div>
+        </article>
+
+        {/* Modo Influencer / Streamer */}
+        <article className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-950/90 p-5 shadow-lg shadow-slate-950/80 backdrop-blur-sm">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] text-slate-300 ring-1 ring-slate-700/80">
+              <span>📺</span>
+              <span className="uppercase tracking-[0.16em]">
+                Modo Influencer / Streamer
+              </span>
+            </div>
+            <h3 className="text-base font-semibold text-slate-50">
+              Bolões para inscritos, membros e comunidade
+            </h3>
+            <p className="text-sm text-slate-300">
+              Use a Copa como motor de engajamento para o seu canal: bolões com{" "}
+              <span className="font-semibold text-emerald-200">
+                URL própria, identidade visual do criador
+              </span>{" "}
+              e ranking apenas da sua audiência.
+            </p>
+            <ul className="mt-2 space-y-1.5 text-[11px] text-slate-300">
+              <li className="flex gap-2">
+                <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400" />
+                <span>Link compartilhável em live, bio, Discord, etc.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400" />
+                <span>Ranking só de inscritos, membros ou apoiadores.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-[3px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-violet-400" />
+                <span>
+                  Integrações com chat da live e comandos automáticos no
+                  roadmap.
+                </span>
+              </li>
+            </ul>
+          </div>
+          <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Integrações com Twitch, YouTube e Discord planejadas.</span>
+            <button
+              type="button"
+              disabled
+              className="inline-flex cursor-not-allowed items-center justify-center rounded-full border border-dashed border-slate-600 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400"
+            >
+              Em breve
+            </button>
+          </div>
+        </article>
+      </div>
+
+      {/* Modal / Wizard Modo Amigos */}
+      {isWizardOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl shadow-black/70">
+            {/* Cabeçalho */}
+            <div className="border-b border-slate-800 px-5 py-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-50">
+                    Criar bolão entre amigos
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Passo {step} de {totalSteps}
+                  </p>
+                </div>
+                <button
+                  onClick={closeWizard}
+                  className="rounded-full p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                  aria-label="Fechar"
+                  disabled={isSubmitting}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="max-h-[60vh] overflow-y-auto px-5 py-4 text-sm text-slate-100">
+              {step === 1 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-slate-50">
+                    1. Tipo de bolão
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Escolha o campeonato e dê um nome para o seu bolão. No MVP,
+                    vamos pré-configurar as regras a partir desta escolha.
+                  </p>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-slate-200">
+                      Campeonato / torneio
+                    </label>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => setTournamentType("worldcup_2026")}
+                        className={`rounded-lg border px-3 py-2 text-xs text-left ${
+                          config.tournamentType === "worldcup_2026"
+                            ? "border-emerald-500 bg-emerald-900/40 text-emerald-100"
+                            : "border-slate-700 bg-slate-950 hover:border-emerald-400 hover:bg-slate-900"
+                        }`}
+                      >
+                        <span className="block font-semibold">
+                          Copa do Mundo 2026
+                        </span>
+                        <span className="block text-[11px] text-slate-400">
+                          Ideal para fase de grupos e mata-mata.
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTournamentType("brasileirao_2026")}
+                        className={`rounded-lg border px-3 py-2 text-xs text-left ${
+                          config.tournamentType === "brasileirao_2026"
+                            ? "border-emerald-500 bg-emerald-900/40 text-emerald-100"
+                            : "border-slate-700 bg-slate-950 hover:border-emerald-400 hover:bg-slate-900"
+                        }`}
+                      >
+                        <span className="block font-semibold">
+                          Campeonato Brasileiro 2026
+                        </span>
+                        <span className="block text-[11px] text-slate-400">
+                          Usa sempre a próxima rodada como base.
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTournamentType("champions_league")}
+                        className={`rounded-lg border px-3 py-2 text-xs text-left ${
+                          config.tournamentType === "champions_league"
+                            ? "border-emerald-500 bg-emerald-900/40 text-emerald-100"
+                            : "border-slate-700 bg-slate-950 hover:border-emerald-400 hover:bg-slate-900"
+                        }`}
+                      >
+                        <span className="block font-semibold">
+                          Champions League
+                        </span>
+                        <span className="block text-[11px] text-slate-400">
+                          Ideal para fases eliminatórias.
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTournamentType("custom")}
+                        className={`rounded-lg border px-3 py-2 text-xs text-left ${
+                          config.tournamentType === "custom"
+                            ? "border-emerald-500 bg-emerald-900/40 text-emerald-100"
+                            : "border-slate-700 bg-slate-950 hover:border-emerald-400 hover:bg-slate-900"
+                        }`}
+                      >
+                        <span className="block font-semibold">Outro torneio</span>
+                        <span className="block text-[11px] text-slate-400">
+                          Futuras ligas e campeonatos personalizados.
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-slate-200">
+                      Nome do bolão
+                    </label>
+                    <input
+                      type="text"
+                      value={config.poolName}
+                      onChange={(e) =>
+                        setConfig((prev) => ({
+                          ...prev,
+                          poolName: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 outline-none ring-emerald-500 focus:border-emerald-400 focus:ring-1"
+                      placeholder="Ex.: Bolão da Firma 2026, Família na Copa, etc."
+                    />
+                  </div>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-slate-50">
+                    2. Estrutura de jogos
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Defina quantos jogos farão parte do seu bolão. O sistema
+                    irá buscar automaticamente partidas que começam nas próximas{" "}
+                    {config.filterHours} horas, usando a próxima rodada do
+                    campeonato escolhido.
+                  </p>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-slate-200">
+                      Quantidade de jogos por bolão
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {[5, 6, 10].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setNumMatches(n as 5 | 6 | 10)}
+                          className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
+                            config.numMatches === n
+                              ? "border-emerald-500 bg-emerald-900/40 text-emerald-100"
+                              : "border-slate-700 bg-slate-950 text-slate-200 hover:border-emerald-400 hover:bg-slate-900"
+                          }`}
+                        >
+                          {n} jogos
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-slate-200">
+                      Janela de início dos jogos (em horas)
+                    </label>
+                    <input
+                      type="number"
+                      min={6}
+                      max={72}
+                      value={config.filterHours}
+                      onChange={(e) =>
+                        setConfig((prev) => ({
+                          ...prev,
+                          filterHours: Number(e.target.value) || 24,
+                        }))
+                      }
+                      className="w-28 rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-slate-50 outline-none ring-emerald-500 focus:border-emerald-400 focus:ring-1"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      Ex.: 24 horas significa que só entram jogos que começam
+                      até 24h depois da criação do bolão.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-slate-50">
+                    3. Jogadores e acesso
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Defina quantas pessoas podem participar e se o bolão será
+                    privado (apenas quem tem o link) ou público (qualquer pessoa
+                    com o link, ideal para comunidades).
+                  </p>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-slate-200">
+                      Número máximo de jogadores
+                    </label>
+                    <input
+                      type="number"
+                      min={2}
+                      max={500}
+                      value={config.maxPlayers}
+                      onChange={(e) => setMaxPlayers(Number(e.target.value) || 10)}
+                      className="w-32 rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-slate-50 outline-none ring-emerald-500 focus:border-emerald-400 focus:ring-1"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      Você poderá convidar via link, e-mail ou outros canais nas
+                      próximas iterações do produto.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-slate-200">
+                      Tipo de acesso
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAccessType("private")}
+                        className={`rounded-lg border px-3 py-2 text-xs text-left ${
+                          config.accessType === "private"
+                            ? "border-emerald-500 bg-emerald-900/40 text-emerald-100"
+                            : "border-slate-700 bg-slate-950 hover:border-emerald-400 hover:bg-slate-900"
+                        }`}
+                      >
+                        <span className="block font-semibold">Privado</span>
+                        <span className="block text-[11px] text-slate-400">
+                          Apenas quem recebe o link/convite consegue entrar.
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAccessType("public")}
+                        className={`rounded-lg border px-3 py-2 text-xs text-left ${
+                          config.accessType === "public"
+                            ? "border-emerald-500 bg-emerald-900/40 text-emerald-100"
+                            : "border-slate-700 bg-slate-950 hover:border-emerald-400 hover:bg-slate-900"
+                        }`}
+                      >
+                        <span className="block font-semibold">Público</span>
+                        <span className="block text-[11px] text-slate-400">
+                          Qualquer pessoa com o link pode participar (ideal para
+                          criadores).
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-slate-50">
+                    4. Resumo e termos
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Confira se está tudo certo antes de avançar para a etapa de
+                    pagamento do serviço (checkout).
+                  </p>
+
+                  <div className="rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-100">Resumo</span>
+                    </div>
+                    <dl className="mt-2 space-y-1">
+                      <div className="flex justify-between">
+                        <dt className="text-slate-400">Nome do bolão</dt>
+                        <dd className="font-medium text-slate-50">
+                          {config.poolName}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-slate-400">Campeonato</dt>
+                        <dd className="font-medium text-slate-50">
+                          {config.tournamentType === "worldcup_2026" &&
+                            "Copa do Mundo 2026"}
+                          {config.tournamentType === "brasileirao_2026" &&
+                            "Campeonato Brasileiro 2026"}
+                          {config.tournamentType === "champions_league" &&
+                            "Champions League"}
+                          {config.tournamentType === "custom" && "Outro torneio"}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-slate-400">Jogos no bolão</dt>
+                        <dd className="font-medium text-slate-50">
+                          {config.numMatches} jogos
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-slate-400">Janela de início</dt>
+                        <dd className="font-medium text-slate-50">
+                          Até {config.filterHours}h após criação
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-slate-400">Máx. jogadores</dt>
+                        <dd className="font-medium text-slate-50">
+                          {config.maxPlayers} participantes
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-slate-400">Acesso</dt>
+                        <dd className="font-medium text-slate-50">
+                          {config.accessType === "private" ? "Privado" : "Público"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  <div className="space-y-2 text-xs text-slate-200">
+                    <label className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        className="mt-[2px]"
+                        checked={config.acceptTerms}
+                        onChange={(e) =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            acceptTerms: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span>
+                        Declaro que li e concordo com os Termos de Uso e condições
+                        do serviço BracketGoal.
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        className="mt-[2px]"
+                        checked={config.acceptRecreationalOnly}
+                        onChange={(e) =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            acceptRecreationalOnly: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span>
+                        Confirmo que este bolão é exclusivamente recreativo, sem
+                        enquadramento como casa de apostas ou operação de jogo.
+                      </span>
+                    </label>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400">
+                    Após esta confirmação, você será direcionado para a página de
+                    checkout do serviço, onde verá o valor e os próximos passos para
+                    ativar o seu bolão.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Rodapé (botões) */}
+            <div className="flex items-center justify-between border-t border-slate-800 px-5 py-3">
+              <button
+                onClick={step === 1 ? closeWizard : prevStep}
+                className="text-xs font-medium text-slate-300 hover:text-slate-100"
+                disabled={isSubmitting}
+              >
+                {step === 1 ? "Cancelar" : "Voltar"}
+              </button>
+
+              <div className="flex items-center gap-2">
+                {step < totalSteps && (
+                  <button
+                    onClick={nextStep}
+                    className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-md shadow-emerald-500/40 transition hover:bg-emerald-400"
+                    disabled={isSubmitting}
+                  >
+                    Continuar
+                  </button>
+                )}
+
+                {step === totalSteps && (
+                  <button
+                    onClick={handleConfirm}
+                    className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-slate-950 shadow-md shadow-emerald-500/40 transition hover:bg-emerald-400 disabled:opacity-60"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting
+                      ? "Criando bolão..."
+                      : "Confirmar e ir para checkout"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

@@ -58,20 +58,15 @@ export default function RootLayout({
                 Sobre o bolão
               </a>
               {/* CTA principal do topo */}
-              <a
-                href="#cta"
-                className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-3.5 py-1.5 text-[11px] font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 transition hover:bg-emerald-400 sm:text-[13px]"
-              >
-                Criar bolão grátis
+              <a href="#cta" className="btn-primary text-[11px] sm:text-[13px]">
+                Criar Bolão Gratuitamente
               </a>
             </nav>
           </div>
         </header>
 
-        {/* Conteúdo das páginas */}
         <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
 
-        {/* Rodapé com links de confiança */}
         <footer className="border-t border-slate-900 bg-slate-950/95">
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-3 text-[11px] text-slate-500 sm:flex-row">
             <span>
@@ -98,3 +93,4 @@ export default function RootLayout({
     </html>
   );
 }
+

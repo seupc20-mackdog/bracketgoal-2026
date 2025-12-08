@@ -52,7 +52,7 @@ export default function Home() {
           alt="Estádio da Copa do Mundo 2026"
           fill
           priority
-          className="object-cover"
+          className="object-cover hero-image"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-slate-950/90 to-black/95" />
       </div>
@@ -77,42 +77,33 @@ export default function Home() {
                   Bracket<span className="text-amber-300">Goal</span> 2026
                 </span>
                 <span className="text-[11px] text-slate-300">
-                  Bolões recreativos para empresas, streamers e grupos de amigos.
+                  Bolões recreativos para empresas, streamers e grupos de
+                  amigos.
                 </span>
               </div>
             </div>
 
+            {/* Título + subtítulo otimizados */}
             <div>
-              <h1 className="mt-3 text-balance text-3xl font-bold tracking-tight md:text-4xl">
-                Crie bolões da Copa para{" "}
-                <span className="bg-gradient-to-tr from-amber-300 via-emerald-300 to-emerald-500 bg-clip-text text-transparent">
-                  equipes, audiência e amigos
-                </span>{" "}
-                em poucos cliques.
+              <h1 className="hero-title mt-3 text-balance text-3xl font-bold tracking-tight md:text-4xl">
+                Bolões Personalizados para Empresas, Streamers e Amigos
               </h1>
-              <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-200/90 md:text-base">
-                O BracketGoal 2026 é a plataforma para{" "}
-                <span className="font-semibold">
-                  empresas, criadores de conteúdo e grupos de amigos
-                </span>{" "}
-                rodarem bolões totalmente recreativos, com{" "}
-                <span className="font-semibold text-emerald-200">
-                  ranking automático, regras personalizáveis
-                </span>{" "}
-                e visual estilo transmissão oficial.
+              <p className="hero-subtitle mt-3 max-w-xl text-base leading-relaxed text-slate-200/90 md:text-lg">
+                Crie competições esportivas em minutos, personalize regras e
+                compartilhe com sua equipe, comunidade ou grupo de amigos.
               </p>
             </div>
 
             {/* CTA principal */}
             <div
               id="cta"
-              className="mt-4 flex flex-col items-stretch gap-3 sm:items-start"
+              className="hero-buttons mt-4 flex flex-col items-stretch gap-3 sm:items-start"
             >
               {isLogged ? (
                 <>
                   <button
                     onClick={handleGoToDashboard}
-                    className="w-full rounded-2xl bg-amber-400 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-amber-400/30 transition-colors hover:bg-amber-300 sm:w-auto"
+                    className="btn-primary w-full sm:w-auto"
                   >
                     Acessar meus bolões da Copa
                   </button>
@@ -126,11 +117,11 @@ export default function Home() {
                   <button
                     onClick={handleLoginWithGoogle}
                     disabled={loadingAuth}
-                    className="w-full rounded-2xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    className="btn-primary w-full sm:w-auto disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loadingAuth
                       ? "Verificando sessão..."
-                      : "Criar meu bolão grátis com Google"}
+                      : "Criar Meu Bolão (Grátis)"}
                   </button>
 
                   <button
@@ -220,7 +211,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* COMO FUNCIONA (resumido) */}
+        {/* Como funciona */}
         <section className="mt-12 space-y-5">
           <div>
             <h2 className="text-lg font-semibold sm:text-xl">
@@ -263,10 +254,10 @@ export default function Home() {
           </div>
 
           <div className="space-y-3 text-sm">
-            <FaqItem question="O BracketGoal 2026 é gratuito?">
+            <FaqItem question="É realmente gratuito?">
               Estamos em fase de MVP. O uso é gratuito para criar e testar
-              bolões recreativos da Copa 2026. No futuro, podemos adicionar
-              planos específicos para empresas e criadores.
+              bolões recreativos da Copa 2026. No futuro, planos premium podem
+              oferecer recursos extras para empresas e criadores.
             </FaqItem>
             <FaqItem question="Preciso instalar algum aplicativo?">
               Não. O BracketGoal roda direto no navegador (desktop e mobile).
@@ -301,8 +292,7 @@ function FeatureCard({ step, title, description }: FeatureCardProps) {
       </div>
       <h3 className="text-sm font-semibold text-slate-50">{title}</h3>
       <p className="mt-1 text-[12px] leading-relaxed text-slate-300">
-        {description}
-      </p>
+        {description}</p>
     </article>
   );
 }
@@ -318,7 +308,9 @@ function FaqItem({ question, children }: FaqItemProps) {
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-slate-100">
         <span>{question}</span>
         <span className="text-xs text-slate-400 group-open:hidden">+</span>
-        <span className="hidden text-xs text-slate-400 group-open:inline">–</span>
+        <span className="hidden text-xs text-slate-400 group-open:inline">
+          –
+        </span>
       </summary>
       <p className="mt-2 text-[13px] text-slate-300">{children}</p>
     </details>
