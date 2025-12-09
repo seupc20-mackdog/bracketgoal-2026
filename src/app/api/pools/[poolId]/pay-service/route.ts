@@ -1,20 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-const appBaseUrl =
-  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-// Supabase somente no servidor com service role
 const supabase =
   supabaseUrl && supabaseServiceRoleKey
     ? createClient(supabaseUrl, supabaseServiceRoleKey)
     : null;
 
 export async function POST(
-  req: Request,
+  _req: NextRequest,
   context: { params: { poolId: string } }
 ) {
   try {
@@ -26,22 +25,25 @@ export async function POST(
     }
 
     if (!mpToken) {
+      console.error("MERCADO_PAGO_ACCESS_TOKEN não configurado.");
       return NextResponse.json(
-        { error: "MERCADO_PAGO_ACCESS_TOKEN não configurado." },
+        {
+          error:
+            "MERCADO_PAGO_ACCESS_TOKEN não configurado no servidor.",
+        },
         { status: 500 }
       );
     }
 
-    const { poolId } = context.params;
-
+    const poolId = context.params?.poolId;
     if (!poolId) {
       return NextResponse.json(
-        { error: "PoolId não informado." },
+        { error: "poolId não informado na URL." },
         { status: 400 }
       );
     }
 
-    // 1) Buscar o bolão para saber valor e descrição
+    // 1) Buscar dados do bolão no banco (precisamos do valor e nome)
     const { data: pool, error: poolError } = await supabase
       .from("pools")
       .select(
@@ -59,29 +61,56 @@ export async function POST(
       .single();
 
     if (poolError || !pool) {
-      console.error("Erro ao buscar pool para pagamento:", poolError);
-      return NextResponse.json(
-        { error: "Não foi possível localizar o bolão para pagamento." },
-        { status: 404 }
+      console.error(
+        "Erro ao carregar pool para pagamento:",
+        poolError
       );
-    }
-
-    const totalPrice = Number(pool.total_price ?? 0);
-
-    if (!totalPrice || totalPrice <= 0) {
       return NextResponse.json(
         {
           error:
-            "Valor do serviço (total_price) inválido ou zero. Ajuste a lógica de preço antes de cobrar.",
+            "Não foi possível carregar os dados do bolão para pagamento.",
+          details: poolError?.message ?? poolError,
+        },
+        { status: 500 }
+      );
+    }
+
+    const amount: number = pool.total_price ?? 0;
+    const currency: string = pool.currency ?? "BRL";
+
+    if (amount <= 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Valor do serviço do bolão é inválido ou zero. Verifique a coluna total_price da tabela pools.",
         },
         { status: 400 }
       );
     }
 
-    const title = `Serviço BracketGoal – ${pool.name}`;
-    const organizerName = pool.organizers?.display_name || "Organizador";
+    // 2) Montar o body da preferência do Mercado Pago
+    const preferenceBody = {
+      items: [
+        {
+          title: `Serviço BracketGoal – Bolão "${pool.name}"`,
+          quantity: 1,
+          currency_id: currency,
+          unit_price: amount,
+        },
+      ],
+      back_urls: {
+        success: `${appUrl}/payments/mercadopago/success?poolId=${poolId}&status=success`,
+        failure: `${appUrl}/payments/mercadopago/success?poolId=${poolId}&status=failure`,
+        pending: `${appUrl}/payments/mercadopago/success?poolId=${poolId}&status=pending`,
+      },
+      auto_return: "approved" as const,
+      metadata: {
+        poolId,
+        organizerName: pool.organizers?.display_name ?? null,
+      },
+    };
 
-    // 2) Criar preferência no Mercado Pago
+    // 3) Chamar a API de Preferências do Mercado Pago
     const mpResponse = await fetch(
       "https://api.mercadopago.com/checkout/preferences",
       {
@@ -90,64 +119,47 @@ export async function POST(
           "Content-Type": "application/json",
           Authorization: `Bearer ${mpToken}`,
         },
-        body: JSON.stringify({
-          items: [
-            {
-              title,
-              description: `Serviço de bolão entre amigos – Organizador: ${organizerName}`,
-              quantity: 1,
-              currency_id: pool.currency || "BRL",
-              unit_price: totalPrice,
-            },
-          ],
-          external_reference: pool.id,
-          metadata: {
-            poolId: pool.id,
-            environment: process.env.NODE_ENV,
-          },
-          back_urls: {
-            success: `${appBaseUrl}/pools/${poolId}/invites?payment=success`,
-            failure: `${appBaseUrl}/pools/${poolId}/checkout?payment=failure`,
-            pending: `${appBaseUrl}/pools/${poolId}/checkout?payment=pending`,
-          },
-          auto_return: "approved",
-          // coloque depois seu webhook real aqui, quando tiver
-          // notification_url: `${appBaseUrl}/api/mercadopago/webhook`,
-        }),
+        body: JSON.stringify(preferenceBody),
       }
     );
 
+    const mpJson = await mpResponse.json().catch(() => null);
+
     if (!mpResponse.ok) {
-      const errBody = await mpResponse.json().catch(() => null);
-      console.error("Erro da API Mercado Pago:", errBody);
+      console.error(
+        "Erro ao criar preferência no Mercado Pago:",
+        mpResponse.status,
+        mpJson
+      );
       return NextResponse.json(
         {
-          error: "Falha ao criar preferência de pagamento no Mercado Pago.",
-          details: errBody,
+          error:
+            "Falha ao criar preferência de pagamento no Mercado Pago.",
+          status: mpResponse.status,
+          details: mpJson ?? null,
         },
         { status: 500 }
       );
     }
 
-    const pref = (await mpResponse.json()) as {
-      id?: string;
-      init_point?: string;
-      sandbox_init_point?: string;
-    };
-
+    // 4) Retornar a URL de redirecionamento para o front
     return NextResponse.json(
       {
-        preferenceId: pref.id,
-        initPoint: pref.init_point,
-        sandboxInitPoint: pref.sandbox_init_point,
+        id: mpJson.id,
+        initPoint: mpJson.init_point,
+        sandboxInitPoint: mpJson.sandbox_init_point,
       },
       { status: 200 }
     );
   } catch (err: any) {
-    console.error("Erro inesperado em /api/pools/[poolId]/pay-service:", err);
+    console.error(
+      "Erro inesperado em /api/pools/[poolId]/pay-service:",
+      err
+    );
     return NextResponse.json(
       {
-        error: "Erro interno ao iniciar pagamento do serviço.",
+        error:
+          "Erro inesperado ao iniciar o pagamento do serviço.",
         details: err?.message ?? String(err),
       },
       { status: 500 }
