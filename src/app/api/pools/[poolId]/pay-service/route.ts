@@ -150,7 +150,6 @@ export async function POST(
       {
         id: mpJson.id,
         initPoint: mpJson.init_point,
-        sandboxInitPoint: mpJson.sandbox_init_point,
       },
       { status: 200 }
     );

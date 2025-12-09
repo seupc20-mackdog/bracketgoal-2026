@@ -157,7 +157,6 @@ export async function POST(
       {
         paymentId: internalPaymentId,
         initPoint: prefJson.init_point ?? null,
-        sandboxInitPoint: prefJson.sandbox_init_point ?? null,
       },
       { status: 200 }
     );

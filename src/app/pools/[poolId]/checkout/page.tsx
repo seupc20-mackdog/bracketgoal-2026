@@ -149,11 +149,11 @@ export default function PoolCheckoutPage() {
         return;
       }
 
-      const redirectUrl = data.initPoint ?? data.sandboxInitPoint;
+      const redirectUrl = data.initPoint;
 
       if (!redirectUrl) {
         alert(
-          "Pagamento criado, mas não recebemos a URL de checkout do Mercado Pago."
+          "Pagamento criado, mas não recebemos a URL de checkout do Mercado Pago (init_point ausente)."
         );
         setPaying(false);
         return;
