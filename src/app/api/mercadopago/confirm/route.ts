@@ -3,7 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+const mpAccessToken =
+  process.env.MERCADO_PAGO_ACCESS_TOKEN ??
+  process.env.MERCADOPAGO_ACCESS_TOKEN;
 
 const supabase =
   supabaseUrl && supabaseServiceRoleKey
@@ -21,7 +23,11 @@ export async function GET(req: Request) {
 
     if (!mpAccessToken) {
       return NextResponse.json(
-        { success: false, error: "MERCADOPAGO_ACCESS_TOKEN não configurado." },
+        {
+          success: false,
+          error:
+            "MERCADO_PAGO_ACCESS_TOKEN (ou MERCADOPAGO_ACCESS_TOKEN) não configurado.",
+        },
         { status: 500 }
       );
     }

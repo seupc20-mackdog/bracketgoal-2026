@@ -3,9 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const mpToken =
+  process.env.MERCADO_PAGO_ACCESS_TOKEN ??
+  process.env.MERCADOPAGO_ACCESS_TOKEN;
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 const supabase =
   supabaseUrl && supabaseServiceRoleKey
@@ -25,11 +26,13 @@ export async function POST(
     }
 
     if (!mpToken) {
-      console.error("MERCADO_PAGO_ACCESS_TOKEN não configurado.");
+      console.error(
+        "MERCADO_PAGO_ACCESS_TOKEN (ou MERCADOPAGO_ACCESS_TOKEN) não configurado."
+      );
       return NextResponse.json(
         {
           error:
-            "MERCADO_PAGO_ACCESS_TOKEN não configurado no servidor.",
+            "MERCADO_PAGO_ACCESS_TOKEN (ou MERCADOPAGO_ACCESS_TOKEN) não configurado no servidor.",
         },
         { status: 500 }
       );
