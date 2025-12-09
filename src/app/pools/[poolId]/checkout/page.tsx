@@ -131,13 +131,20 @@ export default function PoolCheckoutPage() {
       });
 
       const data = await response.json().catch(() => null);
+      console.log("Resposta /pay-service:", response.status, data);
 
       if (!response.ok) {
         console.error("Erro ao iniciar pagamento do serviço:", data);
-        alert(
-          data?.error ??
-            "Não foi possível iniciar o pagamento do serviço. Tente novamente."
-        );
+
+        const msgDetalhe =
+          data?.error ||
+          data?.details?.message ||
+          data?.details?.error ||
+          (Array.isArray(data?.details?.cause) &&
+            data.details.cause[0]?.description) ||
+          JSON.stringify(data, null, 2);
+
+        alert("Falha ao iniciar pagamento:\n\n" + msgDetalhe);
         setPaying(false);
         return;
       }
