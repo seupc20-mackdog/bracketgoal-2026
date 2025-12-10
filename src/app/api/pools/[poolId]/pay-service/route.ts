@@ -1,21 +1,43 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const mpToken =
+
+const mpAccessToken =
   process.env.MERCADO_PAGO_ACCESS_TOKEN ??
   process.env.MERCADOPAGO_ACCESS_TOKEN;
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+// Normaliza a URL base do app (tira barra final e garante http/https)
+const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+const appUrl =
+  rawAppUrl && rawAppUrl.startsWith("http")
+    ? rawAppUrl.replace(/\/+$/, "")
+    : "http://localhost:3000";
+
+// Logs de diagnóstico básicos
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  console.error("[pay-service] Variáveis do Supabase ausentes:", {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseServiceRoleKey,
+  });
+}
+
+if (!mpAccessToken) {
+  console.error(
+    "[pay-service] MERCADO_PAGO_ACCESS_TOKEN / MERCADOPAGO_ACCESS_TOKEN ausente nas env vars"
+  );
+}
+
+// Supabase apenas no servidor com service role
 const supabase =
   supabaseUrl && supabaseServiceRoleKey
     ? createClient(supabaseUrl, supabaseServiceRoleKey)
     : null;
 
 export async function POST(
-  _req: NextRequest,
-  context: { params: { poolId: string } }
+  _req: Request,
+  { params }: { params: { poolId: string } }
 ) {
   try {
     if (!supabase) {
@@ -25,143 +47,158 @@ export async function POST(
       );
     }
 
-    if (!mpToken) {
-      console.error(
-        "MERCADO_PAGO_ACCESS_TOKEN (ou MERCADOPAGO_ACCESS_TOKEN) não configurado."
-      );
+    if (!mpAccessToken) {
       return NextResponse.json(
         {
           error:
-            "MERCADO_PAGO_ACCESS_TOKEN (ou MERCADOPAGO_ACCESS_TOKEN) não configurado no servidor.",
+            "MERCADO_PAGO_ACCESS_TOKEN (ou MERCADOPAGO_ACCESS_TOKEN) não configurado.",
         },
         { status: 500 }
       );
     }
 
-    const poolId = context.params?.poolId;
+    const poolId = params?.poolId;
     if (!poolId) {
       return NextResponse.json(
-        { error: "poolId não informado na URL." },
+        { error: "ID do bolão não informado." },
         { status: 400 }
       );
     }
 
-    // 1) Buscar dados do bolão no banco (precisamos do valor e nome)
+    // 1) Buscar o bolão para saber valor e nome
     const { data: pool, error: poolError } = await supabase
       .from("pools")
-      .select(
-        `
-        id,
-        name,
-        total_price,
-        currency,
-        organizers (
-          display_name
-        )
-      `
-      )
+      .select("id, name, total_price, currency, status")
       .eq("id", poolId)
       .single();
 
     if (poolError || !pool) {
-      console.error(
-        "Erro ao carregar pool para pagamento:",
-        poolError
-      );
+      console.error("[pay-service] Erro ao buscar pool:", poolError);
       return NextResponse.json(
-        {
-          error:
-            "Não foi possível carregar os dados do bolão para pagamento.",
-          details: poolError?.message ?? poolError,
-        },
-        { status: 500 }
+        { error: "Não foi possível localizar este bolão." },
+        { status: 404 }
       );
     }
 
-    const amount: number = pool.total_price ?? 0;
-    const currency: string = pool.currency ?? "BRL";
+    const amount = Number(pool.total_price ?? 0);
+    const currency = pool.currency || "BRL";
 
-    if (amount <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json(
         {
           error:
-            "Valor do serviço do bolão é inválido ou zero. Verifique a coluna total_price da tabela pools.",
+            "Valor do serviço inválido. Verifique a coluna total_price na tabela pools.",
         },
         { status: 400 }
       );
     }
 
-    // 2) Montar o body da preferência do Mercado Pago
+    // 2) Criar registro de pagamento PENDENTE (serviço do bolão)
+    const { data: payment, error: paymentError } = await supabase
+      .from("payments")
+      .insert({
+        pool_id: pool.id,
+        entry_id: null, // pagamento do SERVIÇO, não de participante
+        amount,
+        currency,
+        method: "mercado_pago",
+        status: "pending",
+      })
+      .select("id")
+      .single();
+
+    if (paymentError || !payment) {
+      console.error("[pay-service] Erro ao criar registro de pagamento:", paymentError);
+      return NextResponse.json(
+        {
+          error: "Não foi possível registrar o pagamento do serviço.",
+          details: paymentError?.message ?? paymentError,
+        },
+        { status: 500 }
+      );
+    }
+
+    const internalPaymentId = payment.id as string;
+
+    // 3) Montar corpo da preferência do Mercado Pago
     const preferenceBody = {
       items: [
         {
-          title: `Serviço BracketGoal – Bolão "${pool.name}"`,
+          title: `Serviço BracketGoal - ${pool.name}`,
           quantity: 1,
           currency_id: currency,
           unit_price: amount,
         },
       ],
       back_urls: {
-        success: `${appUrl}/payments/mercadopago/success?poolId=${poolId}&status=success`,
-        failure: `${appUrl}/payments/mercadopago/success?poolId=${poolId}&status=failure`,
-        pending: `${appUrl}/payments/mercadopago/success?poolId=${poolId}&status=pending`,
+        success: `${appUrl}/payments/mercadopago/success?poolId=${pool.id}&paymentId=${internalPaymentId}`,
+        failure: `${appUrl}/payments/mercadopago/failure?poolId=${pool.id}&paymentId=${internalPaymentId}`,
+        pending: `${appUrl}/payments/mercadopago/pending?poolId=${pool.id}&paymentId=${internalPaymentId}`,
       },
-      auto_return: "approved" as const,
-      metadata: {
-        poolId,
-        organizerName: pool.organizers?.display_name ?? null,
-      },
+      // Removido auto_return por enquanto para evitar erro de validação:
+      // auto_return: "approved",
+      external_reference: internalPaymentId,
     };
 
-    // 3) Chamar a API de Preferências do Mercado Pago
+    console.log("[pay-service] Criando preferência no Mercado Pago:", {
+      appUrl,
+      preferenceBody,
+    });
+
     const mpResponse = await fetch(
       "https://api.mercadopago.com/checkout/preferences",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${mpToken}`,
+          Authorization: `Bearer ${mpAccessToken}`,
         },
         body: JSON.stringify(preferenceBody),
       }
     );
 
-    const mpJson = await mpResponse.json().catch(() => null);
-
     if (!mpResponse.ok) {
+      const errText = await mpResponse.text();
       console.error(
-        "Erro ao criar preferência no Mercado Pago:",
+        "[pay-service] Erro ao criar preferência no Mercado Pago:",
         mpResponse.status,
-        mpJson
+        errText
       );
+
       return NextResponse.json(
         {
           error:
-            "Falha ao criar preferência de pagamento no Mercado Pago.",
-          status: mpResponse.status,
-          details: mpJson ?? null,
+            "Erro ao criar preferência de pagamento no Mercado Pago (serviço).",
+          details: errText,
         },
         { status: 500 }
       );
     }
 
-    // 4) Retornar a URL de redirecionamento para o front
+    const prefJson = await mpResponse.json();
+
+    // 4) Atualizar registro de pagamento com referência do PSP (id da preferência)
+    await supabase
+      .from("payments")
+      .update({ psp_reference: String(prefJson.id) })
+      .eq("id", internalPaymentId);
+
+    // 5) Retornar URL de checkout do Mercado Pago
     return NextResponse.json(
       {
-        id: mpJson.id,
-        initPoint: mpJson.init_point,
+        paymentId: internalPaymentId,
+        initPoint: prefJson.init_point ?? prefJson.sandbox_init_point ?? null,
       },
       { status: 200 }
     );
   } catch (err: any) {
     console.error(
       "Erro inesperado em /api/pools/[poolId]/pay-service:",
-      err
+      err?.message ?? err
     );
     return NextResponse.json(
       {
-        error:
-          "Erro inesperado ao iniciar o pagamento do serviço.",
+        error: "Erro interno ao iniciar pagamento do serviço.",
         details: err?.message ?? String(err),
       },
       { status: 500 }

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function MercadoPagoSuccessPage() {
+export const dynamic = "force-dynamic";
+
+function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [message, setMessage] = useState("Confirmando pagamento...");
@@ -58,8 +60,8 @@ export default function MercadoPagoSuccessPage() {
   }, [searchParams, router]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-50">
-      <div className="rounded-2xl border border-emerald-500/70 bg-slate-900/80 px-6 py-5 shadow-lg shadow-emerald-900/50 max-w-md text-center">
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-50">
+      <div className="max-w-md rounded-2xl border border-emerald-500/70 bg-slate-900/80 px-6 py-5 text-center shadow-lg shadow-emerald-900/50">
         <p className="text-sm font-semibold">{message}</p>
         <p className="mt-2 text-xs text-slate-300">
           Caso não seja redirecionado automaticamente, você pode voltar ao
@@ -67,5 +69,26 @@ export default function MercadoPagoSuccessPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function MercadoPagoSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-50">
+          <div className="max-w-md rounded-2xl border border-emerald-500/70 bg-slate-900/80 px-6 py-5 text-center shadow-lg shadow-emerald-900/50">
+            <p className="text-sm font-semibold">
+              Carregando dados do pagamento...
+            </p>
+            <p className="mt-2 text-xs text-slate-300">
+              Aguarde enquanto confirmamos o status com o Mercado Pago.
+            </p>
+          </div>
+        </main>
+      }
+    >
+      <SuccessContent />
+    </Suspense>
   );
 }

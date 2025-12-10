@@ -21,7 +21,7 @@ interface PoolWithOrganizer {
     owner_user_id: string | null;
     type: string;
     display_name: string;
-  } | null;
+  }[] | null;
 }
 
 function prettyTournament(id: string | null): string {
@@ -43,6 +43,7 @@ export default function PoolCheckoutPage() {
   const [pool, setPool] = useState<PoolWithOrganizer | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  const organizer = pool?.organizers?.[0] ?? null;
 
   useEffect(() => {
     async function loadPool() {
@@ -98,11 +99,9 @@ export default function PoolCheckoutPage() {
         }
 
         const poolData = data as unknown as PoolWithOrganizer;
+        const organizerRow = poolData.organizers?.[0];
 
-        if (
-          poolData.organizers?.owner_user_id &&
-          poolData.organizers.owner_user_id !== user.id
-        ) {
+        if (organizerRow?.owner_user_id && organizerRow.owner_user_id !== user.id) {
           setError("Este bolão pertence a outro organizador.");
           setLoading(false);
           return;
@@ -236,7 +235,7 @@ export default function PoolCheckoutPage() {
                 <div className="flex justify-between gap-2">
                   <dt className="text-slate-400">Organizador</dt>
                   <dd className="font-medium text-slate-50 text-right">
-                    {pool.organizers?.display_name ?? "Organizador"}
+                    {organizer?.display_name ?? "Organizador"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2">
@@ -274,9 +273,9 @@ export default function PoolCheckoutPage() {
                 <div className="flex justify-between gap-2">
                   <dt className="text-slate-400">Modo</dt>
                   <dd className="font-medium text-slate-50">
-                    {pool.organizers?.type === "amigos"
+                    {organizer?.type === "amigos"
                       ? "Modo Amigos"
-                      : pool.organizers?.type ?? "—"}
+                      : organizer?.type ?? "—"}
                   </dd>
                 </div>
               </dl>

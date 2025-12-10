@@ -12,6 +12,8 @@ const supabase =
     ? createClient(supabaseUrl, supabaseServiceRoleKey)
     : null;
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   try {
     if (!supabase) {

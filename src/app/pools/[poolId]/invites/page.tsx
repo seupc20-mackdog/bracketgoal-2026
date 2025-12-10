@@ -17,7 +17,7 @@ interface PoolBasic {
     owner_user_id: string | null;
     display_name: string;
     type: string;
-  } | null;
+  }[] | null;
 }
 
 interface PoolEntry {
@@ -52,6 +52,7 @@ export default function PoolInvitesPage() {
   const [adding, setAdding] = useState(false);
 
   const [shareUrl, setShareUrl] = useState("");
+  const organizer = pool?.organizers?.[0] ?? null;
 
   useEffect(() => {
     if (poolId && typeof window !== "undefined") {
@@ -109,11 +110,9 @@ export default function PoolInvitesPage() {
         }
 
         const poolNormalized = poolData as unknown as PoolBasic;
+        const organizerRow = poolNormalized.organizers?.[0];
 
-        if (
-          poolNormalized.organizers?.owner_user_id &&
-          poolNormalized.organizers.owner_user_id !== user.id
-        ) {
+        if (organizerRow?.owner_user_id && organizerRow.owner_user_id !== user.id) {
           setError("Você não é o organizador deste bolão.");
           setLoading(false);
           return;
@@ -268,7 +267,7 @@ export default function PoolInvitesPage() {
                 <div className="flex justify-between gap-2">
                   <dt className="text-slate-400">Organizador</dt>
                   <dd className="font-medium text-slate-50 text-right">
-                    {pool.organizers?.display_name ?? "Organizador"}
+                    {organizer?.display_name ?? "Organizador"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2">
@@ -318,12 +317,12 @@ export default function PoolInvitesPage() {
 
               <div className="mt-4 space-y-2">
                 <h3 className="text-xs font-semibold text-slate-100">
-                  Link de convite (MVP)
+                  Link de convite
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  Este link representa a URL que você irá compartilhar com
-                  amigos. A rota <code>/pools/[poolId]/join</code> pode ser
-                  implementada depois para processar a entrada do participante.
+                  Compartilhe este link com amigos e familiares. A página{" "}
+                  <code>/pools/[poolId]/join</code> já está disponível para que
+                  cada convidado registre nome e WhatsApp.
                 </p>
                 <div className="mt-1 flex flex-col gap-2 text-xs">
                   <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2">
