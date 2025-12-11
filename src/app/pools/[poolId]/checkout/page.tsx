@@ -44,6 +44,7 @@ export default function PoolCheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
   const organizer = pool?.organizers?.[0] ?? null;
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadPool() {
@@ -124,6 +125,7 @@ export default function PoolCheckoutPage() {
 
     try {
       setPaying(true);
+      setSuccessMsg(null);
 
       const response = await fetch(`/api/pools/${poolId}/pay-service`, {
         method: "POST",
@@ -148,18 +150,16 @@ export default function PoolCheckoutPage() {
         return;
       }
 
-      const redirectUrl = data.initPoint;
+      // Checkout externo desativado: seguimos direto para convites
+      const nextUrl = data?.nextUrl ?? `/pools/${poolId}/invites`;
+      setSuccessMsg(
+        data?.message ??
+          "Pagamento marcado como concluído (modo simulado). Redirecionando para convites..."
+      );
 
-      if (!redirectUrl) {
-        alert(
-          "Pagamento criado, mas não recebemos a URL de checkout do Mercado Pago (init_point ausente)."
-        );
-        setPaying(false);
-        return;
-      }
-
-      // Redireciona para o checkout do Mercado Pago
-      window.location.href = redirectUrl;
+      setTimeout(() => {
+        window.location.href = nextUrl;
+      }, 1400);
     } catch (error) {
       console.error("Erro inesperado ao iniciar pagamento:", error);
       alert("Erro inesperado ao iniciar o pagamento do serviço.");
@@ -300,6 +300,11 @@ export default function PoolCheckoutPage() {
               <h2 className="text-sm font-semibold text-slate-50">
                 Valor do serviço
               </h2>
+              <div className="rounded-xl border border-amber-400/50 bg-amber-500/10 p-3 text-[11px] text-amber-50">
+                Checkout do Mercado Pago está desativado temporariamente. Ao clicar em
+                pagar, o bolão será marcado como pago e ativado automaticamente para você
+                continuar a convidar participantes.
+              </div>
 
               <div className="rounded-xl border border-emerald-500/60 bg-emerald-900/20 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200">
@@ -344,6 +349,12 @@ export default function PoolCheckoutPage() {
                   ? "Redirecionando para pagamento..."
                   : "Pagar serviço via Mercado Pago"}
               </button>
+
+              {successMsg && (
+                <div className="rounded-xl border border-emerald-500/60 bg-emerald-500/10 p-3 text-[12px] text-emerald-100">
+                  {successMsg}
+                </div>
+              )}
 
               <p className="text-[11px] text-slate-400">
                 Em produção, este botão redireciona para o checkout do Mercado

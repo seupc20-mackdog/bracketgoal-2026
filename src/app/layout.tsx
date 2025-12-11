@@ -1,5 +1,5 @@
 // src/app/layout.tsx
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import "./globals.css";
 
@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   description:
     "BracketGoal é uma plataforma para criar bolões de campeonatos de forma recreativa. Bolão da Copa do Mundo 2026 para empresas, streamers e grupos de amigos.",
   manifest: "/manifest.webmanifest",
+};
+
+// Next 13/14: themeColor deve ir em viewport, não mais em metadata
+export const viewport: Viewport = {
   themeColor: "#064E3B",
 };
 
@@ -93,4 +97,3 @@ export default function RootLayout({
     </html>
   );
 }
-

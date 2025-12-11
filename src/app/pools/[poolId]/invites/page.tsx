@@ -15,9 +15,9 @@ interface PoolBasic {
   num_matches: number | null;
   organizers: {
     owner_user_id: string | null;
-    display_name: string;
-    type: string;
-  }[] | null;
+    display_name: string | null;
+    type: string | null;
+  } | null;
 }
 
 interface PoolEntry {
@@ -25,15 +25,17 @@ interface PoolEntry {
   display_name: string;
   whatsapp: string | null;
   status: string;
-  score: number;
-  created_at: string;
+  score: number | null;
+  created_at: string | null;
 }
 
 function prettyTournament(id: string | null): string {
   if (!id) return "Custom / misto";
   if (id === "world-cup-2026") return "Copa do Mundo 2026";
-  if (id === "brasileirao-serie-a-2026") return "Campeonato Brasileiro Série A 2026";
-  if (id === "champions-league-2025-2026") return "Champions League 2025-2026";
+  if (id === "brasileirao-serie-a-2026")
+    return "Campeonato Brasileiro Série A 2026";
+  if (id === "champions-league-2025-2026")
+    return "Champions League 2025-2026";
   return id;
 }
 
@@ -52,19 +54,26 @@ export default function PoolInvitesPage() {
   const [adding, setAdding] = useState(false);
 
   const [shareUrl, setShareUrl] = useState("");
-  const organizer = pool?.organizers?.[0] ?? null;
 
-  useEffect(() => {
-    if (poolId && typeof window !== "undefined") {
-      setShareUrl(`${window.location.origin}/pools/${poolId}/join`);
-    }
-  }, [poolId]);
+  const inviteText = (customName?: string) =>
+    `Convite para o bolão "${pool?.name ?? ""}" no BracketGoal.\n` +
+    `Entre pelo link: ${shareUrl}` +
+    (customName ? `\nNome sugerido para você: ${customName}` : "");
 
   useEffect(() => {
     async function loadData() {
       if (!poolId) return;
 
       try {
+        setLoading(true);
+        setError(null);
+
+        const base =
+          process.env.NEXT_PUBLIC_APP_URL ??
+          (typeof window !== "undefined" ? window.location.origin : "");
+        const cleanBase = base.replace(/\/+$/, "");
+        setShareUrl(`${cleanBase}/pools/${poolId}/join`);
+
         // Verifica usuário logado
         const {
           data: { user },
@@ -79,7 +88,7 @@ export default function PoolInvitesPage() {
           return;
         }
 
-        // Carrega dados do bolão + organizer
+        // Carrega dados do bolão + organizer (relação 1-1)
         const { data: poolData, error: poolError } = await supabaseClient
           .from("pools")
           .select(
@@ -110,9 +119,12 @@ export default function PoolInvitesPage() {
         }
 
         const poolNormalized = poolData as unknown as PoolBasic;
-        const organizerRow = poolNormalized.organizers?.[0];
+        const organizerRow = poolNormalized.organizers;
 
-        if (organizerRow?.owner_user_id && organizerRow.owner_user_id !== user.id) {
+        if (
+          organizerRow?.owner_user_id &&
+          organizerRow.owner_user_id !== user.id
+        ) {
           setError("Você não é o organizador deste bolão.");
           setLoading(false);
           return;
@@ -158,6 +170,12 @@ export default function PoolInvitesPage() {
     }
   };
 
+  const handleWhatsAppInvite = () => {
+    if (!shareUrl) return;
+    const url = `https://wa.me/?text=${encodeURIComponent(inviteText())}`;
+    window.open(url, "_blank");
+  };
+
   const handleAddParticipant = async () => {
     if (!poolId || !pool) return;
     if (!newName.trim()) {
@@ -188,7 +206,9 @@ export default function PoolInvitesPage() {
 
       if (error || !data) {
         console.error("Erro ao inserir participante:", error);
-        alert("Não foi possível adicionar o participante. Verifique as políticas de acesso (RLS).");
+        alert(
+          "Não foi possível adicionar o participante. Verifique as políticas de acesso (RLS)."
+        );
         setAdding(false);
         return;
       }
@@ -203,6 +223,9 @@ export default function PoolInvitesPage() {
       setAdding(false);
     }
   };
+
+  const organizerName =
+    pool?.organizers?.display_name ?? "Organizador";
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-50">
@@ -267,7 +290,7 @@ export default function PoolInvitesPage() {
                 <div className="flex justify-between gap-2">
                   <dt className="text-slate-400">Organizador</dt>
                   <dd className="font-medium text-slate-50 text-right">
-                    {organizer?.display_name ?? "Organizador"}
+                    {organizerName}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-2">
@@ -326,15 +349,29 @@ export default function PoolInvitesPage() {
                 </p>
                 <div className="mt-1 flex flex-col gap-2 text-xs">
                   <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2">
-                    <code className="break-all text-slate-200">{shareUrl}</code>
+                    <code className="break-all text-slate-200">
+                      {shareUrl || "Gerando link..."}
+                    </code>
                   </div>
                   <button
                     type="button"
                     onClick={handleCopyLink}
-                    className="self-start rounded-full bg-emerald-500 px-3 py-1.5 text-[11px] font-semibold text-slate-950 shadow-md shadow-emerald-500/40 transition hover:bg-emerald-400"
+                    className="self-start rounded-full bg-emerald-500 px-3 py-1.5 text-[11px] font-semibold text-slate-950 shadow-md shadow-emerald-500/40 transition hover:bg-emerald-400 disabled:opacity-60"
+                    disabled={!shareUrl}
                   >
                     Copiar link de convite
                   </button>
+                  <div className="flex flex-wrap gap-2 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={handleWhatsAppInvite}
+                      className="rounded-full border border-emerald-400/70 bg-emerald-900/40 px-3 py-1.5 font-semibold text-emerald-100 transition hover:bg-emerald-800/50 disabled:opacity-60"
+                      disabled={!shareUrl}
+                    >
+                      Enviar por WhatsApp
+                    </button>
+                    {/* Email removido por enquanto, foco em link + WhatsApp */}
+                  </div>
                 </div>
               </div>
             </section>
@@ -406,41 +443,49 @@ export default function PoolInvitesPage() {
 
                 {entries.length > 0 && (
                   <ul className="space-y-2">
-                    {entries.map((entry) => (
-                      <li
-                        key={entry.id}
-                        className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/90 px-3 py-2"
-                      >
-                        <div>
-                          <p className="text-xs font-semibold text-slate-50">
-                            {entry.display_name}
-                          </p>
-                          {entry.whatsapp && (
-                            <p className="text-[11px] text-slate-400">
-                              WhatsApp: {entry.whatsapp}
+                    {entries.map((entry) => {
+                      const scoreValue = Number(entry.score ?? 0);
+                      const createdAtLabel = entry.created_at
+                        ? new Date(entry.created_at).toLocaleDateString()
+                        : "";
+
+                      return (
+                        <li
+                          key={entry.id}
+                          className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/90 px-3 py-2"
+                        >
+                          <div>
+                            <p className="text-xs font-semibold text-slate-50">
+                              {entry.display_name}
                             </p>
-                          )}
-                          <p className="text-[11px] text-slate-500">
-                            Status:{" "}
-                            <span className="text-emerald-300">
-                              {entry.status}
-                            </span>{" "}
-                            · Pontos: {entry.score.toFixed(2)}
-                          </p>
-                        </div>
-                        <span className="text-[10px] text-slate-500">
-                          {new Date(entry.created_at).toLocaleDateString()}
-                        </span>
-                      </li>
-                    ))}
+                            {entry.whatsapp && (
+                              <p className="text-[11px] text-slate-400">
+                                WhatsApp: {entry.whatsapp}
+                              </p>
+                            )}
+                            <p className="text-[11px] text-slate-500">
+                              Status:{" "}
+                              <span className="text-emerald-300">
+                                {entry.status}
+                              </span>{" "}
+                              · Pontos: {scoreValue.toFixed(2)}
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-slate-500">
+                            {createdAtLabel}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
 
               <p className="text-[11px] text-slate-400">
                 Em versões futuras, esta tela poderá gerar convites com token
-                único, integração com WhatsApp, e permitir que cada participante
-                finalize um cadastro próprio para preencher os palpites.
+                único, integração mais avançada com WhatsApp (API oficial) e
+                permitir que cada participante finalize um cadastro próprio para
+                preencher os palpites.
               </p>
             </section>
           </div>

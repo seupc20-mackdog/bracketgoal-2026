@@ -80,7 +80,10 @@ export async function POST(req: Request) {
   try {
     if (!supabase) {
       return NextResponse.json(
-        { error: "Supabase não configurado no servidor." },
+        {
+          error:
+            "Supabase não configurado no servidor. Verifique NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.",
+        },
         { status: 500 }
       );
     }

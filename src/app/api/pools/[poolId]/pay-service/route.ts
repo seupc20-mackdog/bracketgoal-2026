@@ -4,10 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const mpAccessToken =
-  process.env.MERCADO_PAGO_ACCESS_TOKEN ??
-  process.env.MERCADOPAGO_ACCESS_TOKEN;
-
 // Normaliza a URL base do app (tira barra final e garante http/https)
 const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL;
 const appUrl =
@@ -23,12 +19,6 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
   });
 }
 
-if (!mpAccessToken) {
-  console.error(
-    "[pay-service] MERCADO_PAGO_ACCESS_TOKEN / MERCADOPAGO_ACCESS_TOKEN ausente nas env vars"
-  );
-}
-
 // Supabase apenas no servidor com service role
 const supabase =
   supabaseUrl && supabaseServiceRoleKey
@@ -42,16 +32,9 @@ export async function POST(
   try {
     if (!supabase) {
       return NextResponse.json(
-        { error: "Supabase não configurado no servidor." },
-        { status: 500 }
-      );
-    }
-
-    if (!mpAccessToken) {
-      return NextResponse.json(
         {
           error:
-            "MERCADO_PAGO_ACCESS_TOKEN (ou MERCADOPAGO_ACCESS_TOKEN) não configurado.",
+            "Supabase não configurado no servidor. Verifique NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.",
         },
         { status: 500 }
       );
@@ -93,7 +76,7 @@ export async function POST(
       );
     }
 
-    // 2) Criar registro de pagamento PENDENTE (serviço do bolão)
+    // 2) Criar registro de pagamento já marcado como pago (modo simulado)
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
       .insert({
@@ -101,8 +84,9 @@ export async function POST(
         entry_id: null, // pagamento do SERVIÇO, não de participante
         amount,
         currency,
-        method: "mercado_pago",
-        status: "pending",
+        method: "mercado_pago_simulado",
+        status: "paid",
+        psp_reference: "simulado",
       })
       .select("id")
       .single();
@@ -118,76 +102,35 @@ export async function POST(
       );
     }
 
-    const internalPaymentId = payment.id as string;
+    // 3) Ativar imediatamente o bolão
+    const { error: poolUpdateError } = await supabase
+      .from("pools")
+      .update({
+        status: "active",
+        starts_at: new Date().toISOString(),
+      })
+      .eq("id", pool.id);
 
-    // 3) Montar corpo da preferência do Mercado Pago
-    const preferenceBody = {
-      items: [
-        {
-          title: `Serviço BracketGoal - ${pool.name}`,
-          quantity: 1,
-          currency_id: currency,
-          unit_price: amount,
-        },
-      ],
-      back_urls: {
-        success: `${appUrl}/payments/mercadopago/success?poolId=${pool.id}&paymentId=${internalPaymentId}`,
-        failure: `${appUrl}/payments/mercadopago/failure?poolId=${pool.id}&paymentId=${internalPaymentId}`,
-        pending: `${appUrl}/payments/mercadopago/pending?poolId=${pool.id}&paymentId=${internalPaymentId}`,
-      },
-      // Removido auto_return por enquanto para evitar erro de validação:
-      // auto_return: "approved",
-      external_reference: internalPaymentId,
-    };
-
-    console.log("[pay-service] Criando preferência no Mercado Pago:", {
-      appUrl,
-      preferenceBody,
-    });
-
-    const mpResponse = await fetch(
-      "https://api.mercadopago.com/checkout/preferences",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${mpAccessToken}`,
-        },
-        body: JSON.stringify(preferenceBody),
-      }
-    );
-
-    if (!mpResponse.ok) {
-      const errText = await mpResponse.text();
-      console.error(
-        "[pay-service] Erro ao criar preferência no Mercado Pago:",
-        mpResponse.status,
-        errText
-      );
-
+    if (poolUpdateError) {
+      console.error("[pay-service] Erro ao ativar bolão:", poolUpdateError);
       return NextResponse.json(
         {
           error:
-            "Erro ao criar preferência de pagamento no Mercado Pago (serviço).",
-          details: errText,
+            "Pagamento simulado registrado, mas falhou ao ativar o bolão. Verifique no painel.",
+          details: poolUpdateError?.message ?? poolUpdateError,
         },
         { status: 500 }
       );
     }
 
-    const prefJson = await mpResponse.json();
-
-    // 4) Atualizar registro de pagamento com referência do PSP (id da preferência)
-    await supabase
-      .from("payments")
-      .update({ psp_reference: String(prefJson.id) })
-      .eq("id", internalPaymentId);
-
-    // 5) Retornar URL de checkout do Mercado Pago
+    // 4) Retornar próximo passo (pular checkout externo)
     return NextResponse.json(
       {
-        paymentId: internalPaymentId,
-        initPoint: prefJson.init_point ?? prefJson.sandbox_init_point ?? null,
+        paymentId: payment.id as string,
+        status: "paid_simulated",
+        nextUrl: `${appUrl}/pools/${pool.id}/invites`,
+        message:
+          "Checkout Mercado Pago desativado temporariamente. Bolão marcado como pago e ativado.",
       },
       { status: 200 }
     );

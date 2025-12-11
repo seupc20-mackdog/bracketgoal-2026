@@ -10,6 +10,9 @@ export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [paidPools, setPaidPools] = useState<PaidPoolSummary[]>([]);
+  const [loadingPaidPools, setLoadingPaidPools] = useState(false);
+  const [paidPoolsError, setPaidPoolsError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadUser() {
@@ -26,6 +29,60 @@ export default function DashboardPage() {
 
     loadUser();
   }, []);
+
+  useEffect(() => {
+    async function loadPaidPools() {
+      if (!userId) return;
+      try {
+        setLoadingPaidPools(true);
+        setPaidPoolsError(null);
+
+        const { data, error } = await supabaseClient
+          .from("pools")
+          .select(
+            `
+            id,
+            name,
+            status,
+            access_type,
+            max_participants,
+            num_matches,
+            organizers (
+              owner_user_id,
+              display_name,
+              type
+            )
+          `
+          )
+          .eq("status", "active");
+
+        if (error) {
+          console.error("Erro ao carregar bolões pagos:", error);
+          setPaidPoolsError("Não foi possível carregar seus bolões pagos.");
+          setLoadingPaidPools(false);
+          return;
+        }
+
+        const mine =
+          (data ?? []).filter(
+            (pool: any) =>
+              pool.organizers?.[0]?.owner_user_id &&
+              pool.organizers[0].owner_user_id === userId
+          ) as PaidPoolSummary[];
+
+        setPaidPools(mine);
+        setLoadingPaidPools(false);
+      } catch (err) {
+        console.error("Erro inesperado ao listar bolões pagos:", err);
+        setPaidPoolsError(
+          "Erro inesperado ao listar bolões pagos. Tente novamente em instantes."
+        );
+        setLoadingPaidPools(false);
+      }
+    }
+
+    loadPaidPools();
+  }, [userId]);
 
   async function handleSignOut() {
     await supabaseClient.auth.signOut();
@@ -225,6 +282,137 @@ export default function DashboardPage() {
           </aside>
         </section>
 
+        {/* Bolões pagos do usuário */}
+        <section className="mt-8 rounded-2xl border border-emerald-500/60 bg-slate-950/95 p-5 shadow-lg shadow-emerald-900/60">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-200">
+                Meus bolões pagos
+              </p>
+              <h2 className="text-lg font-semibold text-slate-50">
+                Acompanhe e envie convites
+              </h2>
+              <p className="text-sm text-slate-300">
+                Aqui ficam os bolões que você já criou e pagou. Acesse os convites,
+                acompanhe participantes e volte ao checkout se precisar.
+              </p>
+            </div>
+            <span className="inline-flex w-fit items-center gap-1 rounded-full bg-slate-900/70 px-3 py-1 text-[11px] font-semibold text-emerald-100">
+              {loadingPaidPools ? "Carregando..." : `${paidPools.length} bolão(ões)`}
+            </span>
+          </div>
+
+          {!userId && (
+            <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/90 p-4 text-sm text-slate-200">
+              Faça login para ver os bolões vinculados à sua conta.
+            </div>
+          )}
+
+          {userId && paidPoolsError && (
+            <div className="mt-4 rounded-xl border border-red-500/60 bg-red-500/10 p-4 text-sm text-red-100">
+              {paidPoolsError}
+            </div>
+          )}
+
+          {userId && !paidPoolsError && (
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {loadingPaidPools && (
+                <>
+                  {Array.from({ length: 2 }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      className="animate-pulse rounded-xl border border-slate-800 bg-slate-950/80 p-4"
+                    >
+                      <div className="h-4 w-24 rounded bg-slate-800" />
+                      <div className="mt-3 h-5 w-48 rounded bg-slate-800" />
+                      <div className="mt-2 h-3 w-64 rounded bg-slate-800" />
+                      <div className="mt-4 flex gap-2">
+                        <div className="h-8 w-24 rounded bg-slate-800" />
+                        <div className="h-8 w-32 rounded bg-slate-800" />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {!loadingPaidPools && paidPools.length === 0 && (
+                <div className="rounded-xl border border-slate-800 bg-slate-950/90 p-4 text-sm text-slate-200">
+                  Nenhum bolão pago encontrado. Crie um bolão no modo Amigos e conclua
+                  o checkout para vê-lo aqui.
+                </div>
+              )}
+
+              {!loadingPaidPools &&
+                paidPools.map((pool) => {
+                  const organizer = pool.organizers?.[0];
+                  return (
+                    <div
+                      key={pool.id}
+                      className="flex flex-col justify-between rounded-xl border border-emerald-500/50 bg-slate-950/90 p-4 shadow-md shadow-emerald-900/50"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="text-base font-semibold text-slate-50">
+                            {pool.name}
+                          </h3>
+                          <span className="rounded-full border border-emerald-400/60 bg-emerald-500/10 px-3 py-0.5 text-[11px] font-semibold text-emerald-100">
+                            {pool.status === "active" ? "Ativo" : pool.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300">
+                          {organizer?.display_name
+                            ? `Organizador: ${organizer.display_name}`
+                            : "Organizador não informado"}
+                        </p>
+                        <dl className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+                          <div className="rounded-lg border border-slate-800/80 bg-slate-900/70 px-3 py-2">
+                            <dt className="text-slate-400">Acesso</dt>
+                            <dd className="font-semibold text-slate-100">
+                              {pool.access_type === "public" ? "Público" : "Privado"}
+                            </dd>
+                          </div>
+                          <div className="rounded-lg border border-slate-800/80 bg-slate-900/70 px-3 py-2">
+                            <dt className="text-slate-400">Jogos</dt>
+                            <dd className="font-semibold text-slate-100">
+                              {pool.num_matches ?? "—"}
+                            </dd>
+                          </div>
+                          <div className="rounded-lg border border-slate-800/80 bg-slate-900/70 px-3 py-2">
+                            <dt className="text-slate-400">Participantes</dt>
+                            <dd className="font-semibold text-slate-100">
+                              Máx. {pool.max_participants}
+                            </dd>
+                          </div>
+                          <div className="rounded-lg border border-slate-800/80 bg-slate-900/70 px-3 py-2">
+                            <dt className="text-slate-400">Modo</dt>
+                            <dd className="font-semibold text-slate-100">
+                              {organizer?.type ?? "—"}
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                        <Link
+                          href={`/pools/${pool.id}/invites`}
+                          className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-3 py-2 font-semibold text-slate-950 shadow-sm shadow-emerald-500/40 transition hover:bg-emerald-400"
+                        >
+                          Gerenciar convites
+                        </Link>
+                        <Link
+                          href={`/pools/${pool.id}/checkout`}
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 font-semibold text-slate-100 transition hover:border-emerald-400 hover:text-emerald-100"
+                        >
+                          Ver checkout/status
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </section>
+
         {/* Modos de uso (Amigos / Empresa / Influencer) */}
         <ModesSection ownerEmail={userEmail} ownerUserId={userId} />
       </div>
@@ -255,6 +443,20 @@ function DashboardStat({
 }
 
 type StatusTone = "active" | "soon" | "disabled";
+
+type PaidPoolSummary = {
+  id: string;
+  name: string;
+  status: string;
+  access_type: "private" | "public" | null;
+  max_participants: number;
+  num_matches: number | null;
+  organizers: {
+    owner_user_id: string | null;
+    display_name: string;
+    type: string;
+  }[] | null;
+};
 
 function StatusRow({
   label,
