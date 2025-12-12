@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import "./globals.css";
 
+const themeColor = "#064E3B";
+
 export const metadata: Metadata = {
   title: "BracketGoal – World Cup Brackets 2026",
   description:
@@ -12,7 +14,7 @@ export const metadata: Metadata = {
 
 // Next 13/14: themeColor deve ir em viewport, não mais em metadata
 export const viewport: Viewport = {
-  themeColor: "#064E3B",
+  themeColor,
 };
 
 export default function RootLayout({

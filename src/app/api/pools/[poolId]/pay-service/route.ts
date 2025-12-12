@@ -85,7 +85,7 @@ export async function POST(
         amount,
         currency,
         method: "mercado_pago_simulado",
-        status: "paid",
+        status: "approved",
         psp_reference: "simulado",
       })
       .select("id")
@@ -127,7 +127,7 @@ export async function POST(
     return NextResponse.json(
       {
         paymentId: payment.id as string,
-        status: "paid_simulated",
+        status: "approved_simulated",
         nextUrl: `${appUrl}/pools/${pool.id}/invites`,
         message:
           "Checkout Mercado Pago desativado temporariamente. Bolão marcado como pago e ativado.",

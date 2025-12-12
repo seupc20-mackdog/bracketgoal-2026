@@ -62,7 +62,17 @@ export default function PoolJoinPage() {
           return;
         }
 
-        setPool(data.pool as PoolInviteSummary);
+        const poolData = data.pool as PoolInviteSummary;
+
+        if (poolData.status !== "active") {
+          setError(
+            "Este bolǜo ainda nǜo estǭ ativo. Aguarde a confirma��ǜo do pagamento ou fale com o organizador."
+          );
+          setLoading(false);
+          return;
+        }
+
+        setPool(poolData);
         setParticipantsCount(data.participantsCount ?? 0);
         setLoading(false);
       } catch (err) {
@@ -311,3 +321,4 @@ export default function PoolJoinPage() {
     </main>
   );
 }
+

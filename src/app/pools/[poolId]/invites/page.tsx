@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { buildInviteMessage, buildShareUrl, toE164BR } from "@/lib/invites";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 interface PoolBasic {
@@ -56,9 +57,7 @@ export default function PoolInvitesPage() {
   const [shareUrl, setShareUrl] = useState("");
 
   const inviteText = (customName?: string) =>
-    `Convite para o bolão "${pool?.name ?? ""}" no BracketGoal.\n` +
-    `Entre pelo link: ${shareUrl}` +
-    (customName ? `\nNome sugerido para você: ${customName}` : "");
+    buildInviteMessage(pool?.name ?? "", shareUrl, customName);
 
   useEffect(() => {
     async function loadData() {
@@ -68,11 +67,12 @@ export default function PoolInvitesPage() {
         setLoading(true);
         setError(null);
 
-        const base =
-          process.env.NEXT_PUBLIC_APP_URL ??
-          (typeof window !== "undefined" ? window.location.origin : "");
-        const cleanBase = base.replace(/\/+$/, "");
-        setShareUrl(`${cleanBase}/pools/${poolId}/join`);
+        const share = buildShareUrl(
+          poolId,
+          process.env.NEXT_PUBLIC_APP_URL,
+          typeof window !== "undefined" ? window.location.origin : ""
+        );
+        setShareUrl(share);
 
         // Verifica usuário logado
         const {
@@ -173,6 +173,22 @@ export default function PoolInvitesPage() {
   const handleWhatsAppInvite = () => {
     if (!shareUrl) return;
     const url = `https://wa.me/?text=${encodeURIComponent(inviteText())}`;
+    window.open(url, "_blank");
+  };
+
+  const handleParticipantWhatsApp = (entry: PoolEntry) => {
+    if (!shareUrl || !entry.whatsapp) return;
+
+    const normalized = toE164BR(entry.whatsapp);
+    if (!normalized) {
+      alert("NÇœo foi possÇðvel normalizar o WhatsApp informado para este participante.");
+      return;
+    }
+
+    const phoneDigits = normalized.replace(/\D+/g, "");
+    const url = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(
+      inviteText(entry.display_name)
+    )}`;
     window.open(url, "_blank");
   };
 
@@ -444,7 +460,7 @@ export default function PoolInvitesPage() {
                 {entries.length > 0 && (
                   <ul className="space-y-2">
                     {entries.map((entry) => {
-                      const scoreValue = Number(entry.score ?? 0);
+                      const scoreLabel = Number(entry.score ?? 0).toFixed(2);
                       const createdAtLabel = entry.created_at
                         ? new Date(entry.created_at).toLocaleDateString()
                         : "";
@@ -458,17 +474,23 @@ export default function PoolInvitesPage() {
                             <p className="text-xs font-semibold text-slate-50">
                               {entry.display_name}
                             </p>
-                            {entry.whatsapp && (
-                              <p className="text-[11px] text-slate-400">
-                                WhatsApp: {entry.whatsapp}
-                              </p>
+                            {entry.whatsapp && (              <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                <span>WhatsApp: {entry.whatsapp}</span>
+                <button
+                  type="button"
+                  onClick={() => handleParticipantWhatsApp(entry)}
+                  className="rounded-full border border-emerald-400/60 px-2 py-0.5 text-[10px] font-semibold text-emerald-100 transition hover:bg-emerald-900/50"
+                >
+                  Enviar convite
+                </button>
+              </div>
                             )}
                             <p className="text-[11px] text-slate-500">
                               Status:{" "}
                               <span className="text-emerald-300">
                                 {entry.status}
                               </span>{" "}
-                              · Pontos: {scoreValue.toFixed(2)}
+                              - Pontos: {scoreLabel}
                             </p>
                           </div>
                           <span className="text-[10px] text-slate-500">

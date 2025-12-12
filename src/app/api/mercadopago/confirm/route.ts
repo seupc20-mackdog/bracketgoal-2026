@@ -122,19 +122,19 @@ export async function GET(req: Request) {
       );
     }
 
-    // 3) Atualizar pagamento para 'paid' se ainda n√£o estiver
-    if (internalPayment.status !== "paid") {
+    // 3) Atualizar pagamento para 'approved' se ainda n∆o estiver
+    if (internalPayment.status !== "approved") {
       const { error: updatePayError } = await supabase
         .from("payments")
         .update({
-          status: "paid",
+          status: "approved",
           psp_reference: String(mpJson.id),
         })
         .eq("id", internalPayment.id);
 
       if (updatePayError) {
         console.error(
-          "Erro ao atualizar pagamento interno para 'paid':",
+          "Erro ao atualizar pagamento interno para 'approved':",
           updatePayError
         );
         return NextResponse.json(
@@ -182,7 +182,10 @@ export async function GET(req: Request) {
       );
     }
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json(
+      { success: true, poolId, paymentId: internalPayment.id },
+      { status: 200 }
+    );
   } catch (err: any) {
     console.error("Erro inesperado em /api/mercadopago/confirm:", err);
     return NextResponse.json(
