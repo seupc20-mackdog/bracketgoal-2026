@@ -38,3 +38,8 @@ Configure as mesmas variáveis no Dashboard:
 - Unitários: `npm run test:unit`
 - Integração: `npm run test:integration`
 - E2E Playwright: `npm run test:e2e` (app rodando + `E2E_POOL_ID` configurado)
+
+## Smoke rápido (local)
+
+- Checklist manual: criar bolão (`POST /api/pools`), simular pagamento (`POST /api/pools/:id/pay-service`), abrir/entrar no convite (`GET/POST /api/pools/:id/join`).
+- Script opcional: `SMOKE_BASE_URL=http://localhost:3000 SMOKE_USER_ID=<seu-user-id> npm run smoke`

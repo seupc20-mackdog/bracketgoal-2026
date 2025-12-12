@@ -18,8 +18,10 @@ type PoolInviteSummary = {
 function prettyTournament(id: string | null): string {
   if (!id) return "Custom / misto";
   if (id === "world-cup-2026") return "Copa do Mundo 2026";
-  if (id === "brasileirao-serie-a-2026") return "Campeonato Brasileiro Série A 2026";
-  if (id === "champions-league-2025-2026") return "Champions League 2025-2026";
+  if (id === "brasileirao-serie-a-2026")
+    return "Campeonato Brasileiro Série A 2026";
+  if (id === "champions-league-2025-2026")
+    return "Champions League 2025-2026";
   return id;
 }
 
@@ -66,7 +68,7 @@ export default function PoolJoinPage() {
 
         if (poolData.status !== "active") {
           setError(
-            "Este bolǜo ainda nǜo estǭ ativo. Aguarde a confirma��ǜo do pagamento ou fale com o organizador."
+            "Este bolão ainda não está ativo. Aguarde a confirmação do pagamento ou fale com o organizador."
           );
           setLoading(false);
           return;
@@ -122,15 +124,24 @@ export default function PoolJoinPage() {
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setError(data?.error ?? "Não foi possível registrar sua participação.");
+        setError(
+          data?.error ?? "Não foi possível registrar sua participação."
+        );
         setSubmitting(false);
         return;
       }
 
       if (data?.alreadyJoined) {
         setSuccess(data?.message ?? "Você já está inscrito neste bolão.");
+        if (data?.entry?.id && typeof window !== "undefined") {
+          localStorage.setItem(`bg_entry_${poolId}`, data.entry.id);
+        }
         setSubmitting(false);
         return;
+      }
+
+      if (data?.entry?.id && typeof window !== "undefined") {
+        localStorage.setItem(`bg_entry_${poolId}`, data.entry.id);
       }
 
       setSuccess("Inscrição confirmada! Aguarde a liberação dos palpites.");
@@ -158,7 +169,7 @@ export default function PoolJoinPage() {
         <header className="mb-6 flex items-center justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
-              BracketGoal 2026
+              BracketGoal
             </p>
             <h1 className="mt-1 text-xl font-semibold sm:text-2xl">
               Entrar no bolão
@@ -238,7 +249,8 @@ export default function PoolJoinPage() {
 
               {remainingSpots <= 0 && (
                 <div className="mt-3 rounded-xl border border-amber-500/70 bg-amber-500/10 p-3 text-[11px] text-amber-100">
-                  O bolão está cheio no momento. Fale com o organizador para liberar vagas.
+                  O bolão está cheio no momento. Fale com o organizador para
+                  liberar vagas.
                 </div>
               )}
             </section>
@@ -286,7 +298,8 @@ export default function PoolJoinPage() {
                     disabled={submitting || remainingSpots <= 0}
                   />
                   <p className="text-[11px] text-slate-400">
-                    Apenas o organizador verá seu WhatsApp para combinar detalhes do bolão.
+                    Apenas o organizador verá seu WhatsApp para combinar
+                    detalhes do bolão.
                   </p>
                 </div>
 
@@ -312,7 +325,9 @@ export default function PoolJoinPage() {
               </form>
 
               <p className="text-[11px] text-slate-400">
-                Ao confirmar, seu nome entra na lista de participantes do bolão. Em breve você receberá instruções para enviar seus palpites e acompanhar o ranking.
+                Ao confirmar, seu nome entra na lista de participantes do bolão.
+                Em breve você receberá instruções para enviar seus palpites e
+                acompanhar o ranking.
               </p>
             </section>
           </div>
@@ -321,4 +336,3 @@ export default function PoolJoinPage() {
     </main>
   );
 }
-

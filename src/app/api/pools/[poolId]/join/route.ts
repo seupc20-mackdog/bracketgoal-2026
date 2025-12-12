@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { toE164BR } from "@/lib/invites";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Usa service role apenas no servidor para ignorar RLS quando registrar convites.
 const supabase =
   supabaseUrl && supabaseServiceRoleKey
     ? createClient(supabaseUrl, supabaseServiceRoleKey)
@@ -62,10 +62,7 @@ export async function GET(
     .single();
 
   if (poolError || !pool) {
-    return NextResponse.json(
-      { error: "Bolão não encontrado." },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Bolão não encontrado." }, { status: 404 });
   }
 
   const { count: participantsCount, error: countError } = await supabase
@@ -105,12 +102,12 @@ export async function POST(
 
   const displayName = rawName.trim();
   const whatsapp = rawWhatsapp.trim();
+  const whatsappNormalized = toE164BR(whatsapp);
 
   if (!displayName || displayName.length < 2) {
     return badRequest("Informe um nome para entrar no bolão.");
   }
 
-  // Carrega dados do bolão para validar status e capacidade.
   const { data: pool, error: poolError } = await supabase
     .from("pools")
     .select("id, max_participants, status")
@@ -118,10 +115,7 @@ export async function POST(
     .single();
 
   if (poolError || !pool) {
-    return NextResponse.json(
-      { error: "Bolão não encontrado." },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Bolão não encontrado." }, { status: 404 });
   }
 
   if (pool.status !== "active") {
@@ -146,7 +140,6 @@ export async function POST(
     return badRequest("Limite máximo de participantes atingido.");
   }
 
-  // Evita duplicar inscrição do mesmo usuário logado.
   if (userId) {
     const { data: existingByUser, error: existingUserError } = await supabase
       .from("pool_entries")
@@ -174,7 +167,6 @@ export async function POST(
     }
   }
 
-  // Evita nomes duplicados dentro do mesmo bolão.
   const { data: existingByName, error: existingNameError } = await supabase
     .from("pool_entries")
     .select("id, display_name, status")
@@ -199,13 +191,69 @@ export async function POST(
     );
   }
 
+  if (whatsappNormalized) {
+    const { data: existingByPhone, error: existingPhoneError } = await supabase
+      .from("pool_entries")
+      .select("id, status, display_name, user_id")
+      .eq("pool_id", poolId)
+      .eq("whatsapp", whatsappNormalized)
+      .maybeSingle();
+
+    if (existingPhoneError) {
+      return NextResponse.json(
+        { error: "Erro ao verificar WhatsApp já registrado." },
+        { status: 500 }
+      );
+    }
+
+    if (existingByPhone) {
+      if (existingByPhone.status === "invited") {
+        const { error: updateInvitedError } = await supabase
+          .from("pool_entries")
+          .update({
+            status: "active",
+            display_name: displayName.slice(0, 80),
+            user_id: userId ?? existingByPhone.user_id,
+            whatsapp: whatsappNormalized,
+          })
+          .eq("id", existingByPhone.id);
+
+        if (updateInvitedError) {
+          return NextResponse.json(
+            {
+              error:
+                "Convite existente encontrado, mas falhou ao confirmar sua entrada.",
+            },
+            { status: 500 }
+          );
+        }
+
+        return NextResponse.json(
+          {
+            alreadyJoined: true,
+            message: "Convite confirmado! Você já estava pré-convidado.",
+          },
+          { status: 200 }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          error:
+            "Este WhatsApp já está registrado neste bolão. Use outro número ou fale com o organizador.",
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   const { data: newEntry, error: insertError } = await supabase
     .from("pool_entries")
     .insert({
       pool_id: poolId,
       user_id: userId,
       display_name: displayName.slice(0, 80),
-      whatsapp: whatsapp ? whatsapp.slice(0, 40) : null,
+      whatsapp: whatsappNormalized ? whatsappNormalized.slice(0, 40) : null,
       status: "active",
       score: 0,
     })
